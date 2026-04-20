@@ -1,0 +1,212 @@
+/* ── DESIGN TOKENS ── */
+:root {
+  --bg:          #0D0D0D;
+  --surface:     #1C1C1C;
+  --surface-2:   #272727;
+  --accent:      #F0B100;
+  --accent-dim:  #7A5900;
+  --text:        #EFEFEF;
+  --text-muted:  #5A5A5A;
+  --danger:      #FF4444;
+
+  --font-display: 'Barlow Condensed', sans-serif;
+  --font-body:    'Barlow', sans-serif;
+  --font-mono:    'Roboto Mono', monospace;
+
+  /* Safe area insets for notched iPhones */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+}
+
+
+/* ── RESET & BASE ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+
+/* ── SCREEN SYSTEM ── */
+.screen {
+  display: none;
+  flex-direction: column;
+  min-height: 100dvh;           /* dvh = dynamic viewport height, handles iOS browser bar */
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left: max(20px, var(--safe-left));
+  padding-right: max(20px, var(--safe-right));
+}
+
+.screen.active {
+  display: flex;
+}
+
+
+/* ── HOME SCREEN ── */
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 8px;
+}
+
+.home-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.home-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.home-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.home-workout-name {
+  font-family: var(--font-display);
+  font-size: clamp(52px, 15vw, 80px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-transform: uppercase;
+}
+
+.home-workout-name.rest-day {
+  color: var(--text-muted);
+  font-size: clamp(40px, 11vw, 60px);
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px 0 32px;
+}
+
+
+/* ── BUTTONS ── */
+.btn-primary,
+.btn-secondary {
+  width: 100%;
+  padding: 18px 24px;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+  -webkit-appearance: none;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: #000;
+}
+
+.btn-secondary {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.btn-primary:active {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+.btn-secondary:active {
+  opacity: 0.75;
+  transform: scale(0.98);
+}
+
+.btn-primary[hidden],
+.btn-primary.hidden {
+  display: none;
+}
+
+
+/* ── ICON BUTTON ── */
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color 0.15s ease;
+}
+
+.icon-btn:active {
+  color: var(--text);
+}
+
+
+/* ── PLACEHOLDER SCREENS ── */
+.placeholder-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.placeholder-screen .btn-secondary {
+  margin-top: 24px;
+  width: auto;
+  padding: 14px 32px;
+  font-size: 16px;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+}
