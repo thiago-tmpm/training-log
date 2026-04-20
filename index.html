@@ -2,38 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-
-  <!-- Viewport: no zoom on a native-feeling app -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-  <!-- iOS PWA meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Training">
-
-  <!-- PWA manifest -->
   <link rel="manifest" href="./manifest.json">
-
-  <!-- iOS home screen icon (Safari uses this, not the manifest) -->
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="./style.css">
   <title>Training Log</title>
 </head>
 <body>
 
-  <!-- ── HOME SCREEN ── -->
+  <!-- HOME SCREEN -->
   <div id="screen-home" class="screen active">
-
     <div class="home-header">
       <span class="home-date" id="home-date"></span>
       <button class="icon-btn" id="btn-bodyweight" aria-label="Log bodyweight">
-        <!-- Scale icon -->
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 7h16a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1 1 0 0 1 1-1z"/>
           <path d="M8 7V5a4 4 0 0 1 8 0v2"/>
@@ -42,30 +29,88 @@
         </svg>
       </button>
     </div>
-
     <div class="home-hero">
-      <p class="home-label" id="home-day-label">TODAY</p>
-      <h1 class="home-workout-name" id="home-workout-name">—</h1>
+      <p class="home-label">TODAY</p>
+      <button class="workout-name-btn" id="btn-select-day" aria-label="Change workout day">
+        <h1 class="home-workout-name" id="home-workout-name">—</h1>
+        <svg class="chevron-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
     </div>
-
     <div class="home-actions">
       <button class="btn-primary" id="btn-start-workout">Start Workout</button>
       <button class="btn-secondary" id="btn-log-cardio">Log Cardio</button>
     </div>
-
   </div>
 
 
-  <!-- ── PLACEHOLDER SCREENS (built in later phases) ── -->
-
-  <div id="screen-workout" class="screen">
-    <div class="placeholder-screen">
-      <p>Workout Logger</p>
-      <p class="muted">WBS 3 — coming next</p>
-      <button class="btn-secondary" onclick="showScreen('screen-home')">← Back</button>
+  <!-- EXERCISE SCREEN -->
+  <div id="screen-exercise" class="screen">
+    <div class="ex-header">
+      <span class="ex-progress" id="ex-progress">1 / 1</span>
+      <button class="skip-btn" id="btn-skip-exercise">Skip</button>
+    </div>
+    <div class="ex-body">
+      <div class="ex-info">
+        <h2 class="ex-name" id="ex-name"></h2>
+        <span class="ex-rep-range" id="ex-rep-range"></span>
+      </div>
+      <div class="sets-container" id="sets-container"></div>
+      <div class="ex-extras">
+        <button class="extras-toggle" id="btn-machine-adj"
+          onclick="toggleExtras('machine-adj-content', 'btn-machine-adj', 'Machine Adjustment')">
+          + Machine Adjustment
+        </button>
+        <div class="extras-content hidden" id="machine-adj-content">
+          <textarea id="input-machine-adj" class="extras-textarea"
+            placeholder="Seat position, pin, angle..."></textarea>
+        </div>
+        <button class="extras-toggle" id="btn-observations"
+          onclick="toggleExtras('observations-content', 'btn-observations', 'Observations')">
+          + Observations
+        </button>
+        <div class="extras-content hidden" id="observations-content">
+          <textarea id="input-observations" class="extras-textarea"
+            placeholder="Notes about this exercise..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="ex-footer">
+      <button class="btn-primary" id="btn-next-exercise">Next Exercise</button>
     </div>
   </div>
 
+
+  <!-- SESSION END SCREEN -->
+  <div id="screen-session-end" class="screen">
+    <div class="end-header">
+      <h1 class="end-title">Done.</h1>
+    </div>
+    <div class="end-stats">
+      <div class="end-stat">
+        <span class="end-stat-label">Duration</span>
+        <span class="end-stat-value" id="end-duration">—</span>
+      </div>
+      <div class="end-stat">
+        <span class="end-stat-label">Exercises</span>
+        <span class="end-stat-value" id="end-exercises">—</span>
+      </div>
+    </div>
+    <div class="end-bodyweight">
+      <label class="end-label" for="input-bodyweight">Bodyweight</label>
+      <div class="end-weight-row">
+        <input type="text" inputmode="decimal" id="input-bodyweight" placeholder="0.0" autocomplete="off">
+        <span class="unit">kg</span>
+      </div>
+    </div>
+    <div class="end-footer">
+      <button class="btn-primary" id="btn-finish-session">Finish</button>
+    </div>
+  </div>
+
+
+  <!-- PLACEHOLDER SCREENS -->
   <div id="screen-cardio" class="screen">
     <div class="placeholder-screen">
       <p>Cardio Logger</p>
@@ -83,6 +128,30 @@
   </div>
 
 
+  <!-- BOTTOM SHEETS -->
+  <div class="sheet-overlay" id="sheet-day-select">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <p class="sheet-title">Select Workout</p>
+      <div class="sheet-options" id="sheet-day-options"></div>
+    </div>
+  </div>
+
+  <div class="sheet-overlay" id="sheet-skip">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <p class="sheet-title">Skip Exercise</p>
+      <div class="sheet-options">
+        <button class="sheet-option" onclick="skipExercise('not_today')">Not doing today</button>
+        <button class="sheet-option" onclick="skipExercise('come_back_later')">Come back later</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Load order: exercises → app → workout -->
+  <script src="./exercises.js"></script>
   <script src="./app.js"></script>
+  <script src="./workout.js"></script>
 </body>
 </html>

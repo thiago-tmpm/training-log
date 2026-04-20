@@ -1,10 +1,12 @@
-const CACHE_NAME = 'training-log-v1';
+const CACHE_NAME = 'training-log-v2';
 
 const ASSETS = [
   './',
   './index.html',
   './style.css',
+  './exercises.js',
   './app.js',
+  './workout.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
