@@ -10,12 +10,22 @@ const ASSETS = [
   './icons/icon-512.png'
 ];
 
-// Install: cache all core assets
+// Install: cache assets individually so one failure doesn't abort everything
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => {
+      const promises = ASSETS.map(url =>
+        cache.add(url).catch(err => {
+          console.error('SW: failed to cache', url, err);
+        })
+      );
+      return Promise.all(promises);
+    })
+    .then(() => {
+      console.log('SW: install complete');
+      return self.skipWaiting();
+    })
+    .catch(err => console.error('SW: install failed', err))
   );
 });
 
@@ -28,7 +38,10 @@ self.addEventListener('activate', event => {
           .filter(key => key !== CACHE_NAME)
           .map(key => caches.delete(key))
       )
-    ).then(() => self.clients.claim())
+    ).then(() => {
+      console.log('SW: activated');
+      return self.clients.claim();
+    })
   );
 });
 
