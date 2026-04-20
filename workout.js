@@ -229,6 +229,7 @@ function saveSession() {
     JSON.stringify(wSession, null, 2));
 
   wSession = null;
+  initHome();
   showScreen('screen-home');
 }
 
