@@ -324,6 +324,10 @@ body {
   -webkit-appearance: none;
 }
 
+.input-weight.prefilled {
+  color: var(--accent-dim);
+}
+
 .unit {
   font-family: var(--font-mono);
   font-size: 11px;

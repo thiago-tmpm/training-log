@@ -5,32 +5,48 @@ let wSession = null;
 
 
 // ── START SESSION ──
-function startWorkout(dayKey) {
+async function startWorkout(dayKey) {
   const exercises = EXERCISES[dayKey];
 
   wSession = {
-    workoutDay:    dayKey,
-    date:          new Date().toISOString().split('T')[0],
-    startTime:     new Date().toISOString(),
-    endTime:       null,
-    bodyweightKg:  null,
-    // Shallow copy so we can mutate the queue (skip, reorder) without
-    // touching the original EXERCISES data.
-    exerciseQueue: exercises.map(ex => ({ ...ex })),
-    currentIndex:  0,
-    sets:          {},  // { [exercise_id]: [{ setNumber, weightKg, reps, failure }] }
-    machineAdjustments: {},  // { [exercise_id]: string }
-    observations:  {}        // { [exercise_id]: string }
+    workoutDay:         dayKey,
+    date:               new Date().toISOString().split('T')[0],
+    startTime:          new Date().toISOString(),
+    endTime:            null,
+    bodyweightKg:       null,
+    exerciseQueue:      exercises.map(ex => ({ ...ex })),
+    currentIndex:       0,
+    sets:               {},
+    machineAdjustments: {},
+    observations:       {},
+    prefillWeights:     {}   // { [exercise_id]: { [setNumber]: weightKg } }
   };
 
-  // Initialise empty set rows for every exercise up front
   exercises.forEach(ex => {
     wSession.sets[ex.id] = Array.from({ length: ex.sets }, (_, i) => ({
-      setNumber: i + 1,
-      weightKg:  '',
-      reps:      '',
-      failure:   false
+      setNumber:   i + 1,
+      weightKg:    '',
+      reps:        '',
+      failure:     false,
+      isPrefilled: false
     }));
+  });
+
+  // Fetch last weights for all exercises concurrently, then write them
+  // into session state so they're saved even if the user never edits them.
+  const prefillResults = await Promise.all(
+    exercises.map(ex => getLastWeightForExercise(ex.id))
+  );
+
+  exercises.forEach((ex, i) => {
+    const weights = prefillResults[i];
+    wSession.prefillWeights[ex.id] = weights;
+    wSession.sets[ex.id].forEach(set => {
+      if (weights[set.setNumber] !== undefined) {
+        set.weightKg    = String(weights[set.setNumber]);
+        set.isPrefilled = true;
+      }
+    });
   });
 
   renderExerciseScreen();
@@ -45,27 +61,20 @@ function renderExerciseScreen() {
   const pos    = wSession.currentIndex + 1;
   const isLast = pos === total;
 
-  // Header
   document.getElementById('ex-progress').textContent = `${pos} / ${total}`;
-
-  // Exercise info
   document.getElementById('ex-name').textContent      = ex.name;
   document.getElementById('ex-rep-range').textContent = ex.repRange;
 
-  // Set rows
   renderSetRows(ex);
 
-  // Restore any saved extras for this exercise
-  document.getElementById('input-machine-adj').value = wSession.machineAdjustments[ex.id] || '';
-  document.getElementById('input-observations').value = wSession.observations[ex.id]      || '';
+  document.getElementById('input-machine-adj').value  = wSession.machineAdjustments[ex.id] || '';
+  document.getElementById('input-observations').value = wSession.observations[ex.id]        || '';
 
-  // Collapse extras panels
   document.getElementById('machine-adj-content').classList.add('hidden');
   document.getElementById('observations-content').classList.add('hidden');
   document.getElementById('btn-machine-adj').textContent  = '+ Machine Adjustment';
   document.getElementById('btn-observations').textContent = '+ Observations';
 
-  // Next / Finish label
   document.getElementById('btn-next-exercise').textContent =
     isLast ? 'Finish Session' : 'Next Exercise';
 }
@@ -85,7 +94,7 @@ function renderSetRows(ex) {
         <input
           type="text"
           inputmode="decimal"
-          class="input-weight"
+          class="input-weight${set.isPrefilled ? ' prefilled' : ''}"
           value="${set.weightKg}"
           placeholder="—"
           data-ex="${ex.id}"
@@ -117,7 +126,6 @@ function renderSetRows(ex) {
     container.appendChild(row);
   });
 
-  // Save any input change back to session state immediately
   container.querySelectorAll('input').forEach(input => {
     input.addEventListener('input', handleSetInput);
     input.addEventListener('blur',  handleSetInput);
@@ -126,29 +134,27 @@ function renderSetRows(ex) {
   container.querySelectorAll('.failure-btn').forEach(btn => {
     btn.addEventListener('click', handleFailureToggle);
   });
-
-  // Auto-focus is intentionally disabled until device testing confirms
-  // keyboard doesn't obscure the Next Exercise button.
-  // To enable: uncomment the block below.
-  //
-  // setTimeout(() => {
-  //   const first = container.querySelector('.input-reps');
-  //   if (first) first.focus();
-  // }, 150);
 }
 
 
 // ── INPUT HANDLERS ──
 function handleSetInput(e) {
   const { ex, set, field } = e.target.dataset;
-  wSession.sets[ex][parseInt(set)][field] = e.target.value;
+  const idx = parseInt(set, 10);
+  wSession.sets[ex][idx][field] = e.target.value;
+
+  // Clear prefilled indicator as soon as the user edits the weight
+  if (field === 'weightKg') {
+    wSession.sets[ex][idx].isPrefilled = false;
+    e.target.classList.remove('prefilled');
+  }
 }
 
 function handleFailureToggle(e) {
-  const btn     = e.currentTarget;
+  const btn    = e.currentTarget;
   const { ex, set } = btn.dataset;
-  const idx     = parseInt(set);
-  const newVal  = !wSession.sets[ex][idx].failure;
+  const idx    = parseInt(set, 10);
+  const newVal = !wSession.sets[ex][idx].failure;
   wSession.sets[ex][idx].failure = newVal;
   btn.classList.toggle('active', newVal);
   btn.setAttribute('aria-pressed', String(newVal));
@@ -157,7 +163,6 @@ function handleFailureToggle(e) {
 
 // ── NEXT EXERCISE ──
 function nextExercise() {
-  // Save extras for the exercise we're leaving
   const ex = wSession.exerciseQueue[wSession.currentIndex];
   wSession.machineAdjustments[ex.id] = document.getElementById('input-machine-adj').value;
   wSession.observations[ex.id]       = document.getElementById('input-observations').value;
@@ -181,10 +186,8 @@ function skipExercise(mode) {
   const idx = wSession.currentIndex;
 
   if (mode === 'not_today') {
-    // Remove from queue entirely; next exercise slides into current index
     wSession.exerciseQueue.splice(idx, 1);
   } else if (mode === 'come_back_later') {
-    // Move to end of queue; next exercise slides into current index
     const ex = wSession.exerciseQueue.splice(idx, 1)[0];
     wSession.exerciseQueue.push(ex);
   }
@@ -220,13 +223,26 @@ function finishWorkout() {
 
 
 // ── SAVE SESSION ──
-// Logs to console for now — IndexedDB storage implemented in WBS 4.4
-function saveSession() {
-  const bwInput = document.getElementById('input-bodyweight').value.trim();
-  wSession.bodyweightKg = bwInput ? parseFloat(bwInput) : null;
+async function saveSession() {
+  const btn = document.getElementById('btn-finish-session');
+  btn.disabled    = true;
+  btn.textContent = 'Saving...';
 
-  console.log('Session complete (in-memory only until WBS 4.4):',
-    JSON.stringify(wSession, null, 2));
+  const bwInput  = document.getElementById('input-bodyweight').value.trim();
+  const weightKg = bwInput ? parseFloat(bwInput) : null;
+  wSession.bodyweightKg = weightKg;
+
+  try {
+    await saveWorkoutSession(wSession);
+    if (weightKg !== null) {
+      await saveBodyweightLog(weightKg, wSession.date);
+    }
+  } catch (err) {
+    console.error('Failed to save session:', err);
+    btn.disabled    = false;
+    btn.textContent = 'Finish';
+    return; // Keep the user on the screen — don't lose data silently
+  }
 
   wSession = null;
   initHome();
@@ -236,8 +252,8 @@ function saveSession() {
 
 // ── EXTRAS TOGGLES ──
 function toggleExtras(contentId, btnId, label) {
-  const content = document.getElementById(contentId);
-  const btn     = document.getElementById(btnId);
+  const content     = document.getElementById(contentId);
+  const btn         = document.getElementById(btnId);
   const isNowHidden = content.classList.toggle('hidden');
-  btn.textContent = isNowHidden ? `+ ${label}` : `− ${label}`;
+  btn.textContent   = isNowHidden ? `+ ${label}` : `− ${label}`;
 }
