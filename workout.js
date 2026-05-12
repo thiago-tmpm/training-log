@@ -147,7 +147,8 @@ function renderSetRows(ex) {
 
 // Select all text on focus so the first keystroke replaces the whole value.
 function handleWeightFocus(e) {
-  e.target.select();
+  const input = e.target;
+  setTimeout(() => input.select(), 0);
 }
 
 function handleSetInput(e) {
