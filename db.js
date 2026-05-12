@@ -53,6 +53,8 @@ const dbReady = new Promise((resolve, reject) => {
 // ── SAVE WORKOUT SESSION ──
 // Writes one workout_sessions record and one set_logs record per set,
 // all in a single transaction. Returns the generated session_id.
+// Resolves after all requests are queued — does not wait for tx.oncomplete,
+// which has known reliability issues on iOS Safari.
 // Bodyweight is intentionally excluded — stored separately in bodyweight_log.
 async function saveWorkoutSession(wSession) {
   const db = await dbReady;
@@ -61,7 +63,7 @@ async function saveWorkoutSession(wSession) {
     const tx = db.transaction(['workout_sessions', 'set_logs'], 'readwrite');
 
     tx.onerror = e => {
-      console.error('DB: saveWorkoutSession failed', e.target.error);
+      console.error('DB: transaction error', e.target.error);
       reject(e.target.error);
     };
 
@@ -74,6 +76,8 @@ async function saveWorkoutSession(wSession) {
       start_time:  wSession.startTime,
       end_time:    wSession.endTime
     });
+
+    sessionReq.onerror = e => reject(e.target.error);
 
     sessionReq.onsuccess = e => {
       const sessionId = e.target.result;
@@ -94,10 +98,10 @@ async function saveWorkoutSession(wSession) {
         });
       });
 
-      tx.oncomplete = () => {
-        console.log('DB: session saved, id =', sessionId);
-        resolve(sessionId);
-      };
+      // All requests are queued. Resolve now — the transaction commits in
+      // the background. Waiting for tx.oncomplete is unreliable on iOS Safari.
+      console.log('DB: session saved, id =', sessionId);
+      resolve(sessionId);
     };
   });
 }

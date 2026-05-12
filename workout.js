@@ -126,7 +126,13 @@ function renderSetRows(ex) {
     container.appendChild(row);
   });
 
-  container.querySelectorAll('input').forEach(input => {
+  container.querySelectorAll('.input-weight').forEach(input => {
+    input.addEventListener('focus',  handleWeightFocus);
+    input.addEventListener('input',  handleSetInput);
+    input.addEventListener('blur',   handleSetInput);
+  });
+
+  container.querySelectorAll('.input-reps').forEach(input => {
     input.addEventListener('input', handleSetInput);
     input.addEventListener('blur',  handleSetInput);
   });
@@ -138,6 +144,12 @@ function renderSetRows(ex) {
 
 
 // ── INPUT HANDLERS ──
+
+// Select all text on focus so the first keystroke replaces the whole value.
+function handleWeightFocus(e) {
+  e.target.select();
+}
+
 function handleSetInput(e) {
   const { ex, set, field } = e.target.dataset;
   const idx = parseInt(set, 10);
