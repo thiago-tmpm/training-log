@@ -126,6 +126,28 @@ async function saveBodyweightLog(weightKg, date, notes = null) {
 }
 
 
+// ── GET LAST BODYWEIGHT ──
+// Returns the most recently saved weight_kg, or null if none exists.
+async function getLastBodyweight() {
+  const db = await dbReady;
+
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction('bodyweight_log', 'readonly');
+    const store = tx.objectStore('bodyweight_log');
+
+    // Open a cursor in descending key order — first record is the most recent.
+    const req = store.openCursor(null, 'prev');
+
+    req.onsuccess = e => {
+      const cursor = e.target.result;
+      resolve(cursor ? cursor.value.weight_kg : null);
+    };
+
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+
 // ── GET LAST WEIGHTS FOR EXERCISE ──
 // Returns { [setNumber]: weightKg } from the most recent session
 // that contains data for this exercise_id.

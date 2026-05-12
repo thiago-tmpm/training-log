@@ -146,6 +146,7 @@ function renderSetRows(ex) {
 // ── INPUT HANDLERS ──
 
 // Select all text on focus so the first keystroke replaces the whole value.
+// setTimeout defers the call past iOS Safari's own cursor positioning.
 function handleWeightFocus(e) {
   const input = e.target;
   setTimeout(() => input.select(), 0);
@@ -215,7 +216,7 @@ function skipExercise(mode) {
 
 
 // ── FINISH WORKOUT ──
-function finishWorkout() {
+async function finishWorkout() {
   wSession.endTime = new Date().toISOString();
 
   const start    = new Date(wSession.startTime);
@@ -230,6 +231,11 @@ function finishWorkout() {
   document.getElementById('end-duration').textContent  = duration;
   document.getElementById('end-exercises').textContent =
     `${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}`;
+
+  // Pre-fill bodyweight input with last recorded value, if any
+  const lastBw = await getLastBodyweight();
+  const bwInput = document.getElementById('input-bodyweight');
+  bwInput.value = lastBw !== null ? String(lastBw) : '';
 
   showScreen('screen-session-end');
 }
