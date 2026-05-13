@@ -32,14 +32,15 @@ async function startWorkout(dayKey) {
     }));
   });
 
-  // Fetch last weights for all exercises concurrently, then write them
-  // into session state so they're saved even if the user never edits them.
-  const prefillResults = await Promise.all(
-    exercises.map(ex => getLastWeightForExercise(ex.id))
-  );
+  // Fetch last weights and machine adjustments for all exercises concurrently.
+  const [weightResults, machineResults] = await Promise.all([
+    Promise.all(exercises.map(ex => getLastWeightForExercise(ex.id))),
+    Promise.all(exercises.map(ex => getLastMachineAdjustmentForExercise(ex.id)))
+  ]);
 
   exercises.forEach((ex, i) => {
-    const weights = prefillResults[i];
+    // Weight prefill
+    const weights = weightResults[i];
     wSession.prefillWeights[ex.id] = weights;
     wSession.sets[ex.id].forEach(set => {
       if (weights[set.setNumber] !== undefined) {
@@ -47,6 +48,11 @@ async function startWorkout(dayKey) {
         set.isPrefilled = true;
       }
     });
+
+    // Machine adjustment prefill
+    if (machineResults[i]) {
+      wSession.machineAdjustments[ex.id] = machineResults[i];
+    }
   });
 
   renderExerciseScreen();
@@ -67,13 +73,22 @@ function renderExerciseScreen() {
 
   renderSetRows(ex);
 
-  document.getElementById('input-machine-adj').value  = wSession.machineAdjustments[ex.id] || '';
-  document.getElementById('input-observations').value = wSession.observations[ex.id]        || '';
-
-  document.getElementById('machine-adj-content').classList.add('hidden');
+  // Restore observations (always collapsed)
+  document.getElementById('input-observations').value = wSession.observations[ex.id] || '';
   document.getElementById('observations-content').classList.add('hidden');
-  document.getElementById('btn-machine-adj').textContent  = '+ Machine Adjustment';
   document.getElementById('btn-observations').textContent = '+ Observations';
+
+  // Restore machine adjustment — auto-expand if a value exists
+  const machAdj = wSession.machineAdjustments[ex.id] || '';
+  document.getElementById('input-machine-adj').value = machAdj;
+
+  if (machAdj) {
+    document.getElementById('machine-adj-content').classList.remove('hidden');
+    document.getElementById('btn-machine-adj').textContent = '− Machine Adjustment';
+  } else {
+    document.getElementById('machine-adj-content').classList.add('hidden');
+    document.getElementById('btn-machine-adj').textContent = '+ Machine Adjustment';
+  }
 
   document.getElementById('btn-next-exercise').textContent =
     isLast ? 'Finish Session' : 'Next Exercise';
@@ -233,7 +248,7 @@ async function finishWorkout() {
     `${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}`;
 
   // Pre-fill bodyweight input with last recorded value, if any
-  const lastBw = await getLastBodyweight();
+  const lastBw  = await getLastBodyweight();
   const bwInput = document.getElementById('input-bodyweight');
   bwInput.value = lastBw !== null ? String(lastBw) : '';
 
