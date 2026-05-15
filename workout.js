@@ -19,7 +19,7 @@ async function startWorkout(dayKey) {
     sets:               {},
     machineAdjustments: {},
     observations:       {},
-    prefillWeights:     {}   // { [exercise_id]: { [setNumber]: weightKg } }
+    prefillWeights:     {}
   };
 
   exercises.forEach(ex => {
@@ -39,7 +39,6 @@ async function startWorkout(dayKey) {
   ]);
 
   exercises.forEach((ex, i) => {
-    // Weight prefill
     const weights = weightResults[i];
     wSession.prefillWeights[ex.id] = weights;
     wSession.sets[ex.id].forEach(set => {
@@ -49,7 +48,6 @@ async function startWorkout(dayKey) {
       }
     });
 
-    // Machine adjustment prefill
     if (machineResults[i]) {
       wSession.machineAdjustments[ex.id] = machineResults[i];
     }
@@ -73,12 +71,12 @@ function renderExerciseScreen() {
 
   renderSetRows(ex);
 
-  // Restore observations (always collapsed)
+  // Observations — always collapsed
   document.getElementById('input-observations').value = wSession.observations[ex.id] || '';
   document.getElementById('observations-content').classList.add('hidden');
   document.getElementById('btn-observations').textContent = '+ Observations';
 
-  // Restore machine adjustment — auto-expand if a value exists
+  // Machine adjustment — auto-expand if a value exists
   const machAdj = wSession.machineAdjustments[ex.id] || '';
   document.getElementById('input-machine-adj').value = machAdj;
 
@@ -160,8 +158,7 @@ function renderSetRows(ex) {
 
 // ── INPUT HANDLERS ──
 
-// Select all text on focus so the first keystroke replaces the whole value.
-// setTimeout defers the call past iOS Safari's own cursor positioning.
+// setTimeout defers select() past iOS Safari's own cursor positioning.
 function handleWeightFocus(e) {
   const input = e.target;
   setTimeout(() => input.select(), 0);
@@ -172,7 +169,6 @@ function handleSetInput(e) {
   const idx = parseInt(set, 10);
   wSession.sets[ex][idx][field] = e.target.value;
 
-  // Clear prefilled indicator as soon as the user edits the weight
   if (field === 'weightKg') {
     wSession.sets[ex][idx].isPrefilled = false;
     e.target.classList.remove('prefilled');
@@ -247,7 +243,6 @@ async function finishWorkout() {
   document.getElementById('end-exercises').textContent =
     `${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}`;
 
-  // Pre-fill bodyweight input with last recorded value, if any
   const lastBw  = await getLastBodyweight();
   const bwInput = document.getElementById('input-bodyweight');
   bwInput.value = lastBw !== null ? String(lastBw) : '';
@@ -275,7 +270,7 @@ async function saveSession() {
     console.error('Failed to save session:', err);
     btn.disabled    = false;
     btn.textContent = 'Finish';
-    return; // Keep the user on the screen — don't lose data silently
+    return;
   }
 
   wSession = null;

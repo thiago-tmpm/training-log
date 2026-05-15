@@ -7,8 +7,6 @@ let _db = null;
 
 
 // ── OPEN / INIT ──
-// dbReady is a Promise that resolves once the database is open.
-// All other functions await it before touching the DB.
 const dbReady = new Promise((resolve, reject) => {
   const request = indexedDB.open(DB_NAME, DB_VERSION);
 
@@ -51,7 +49,7 @@ const dbReady = new Promise((resolve, reject) => {
 
 
 // ── SAVE WORKOUT SESSION ──
-// Split into two sequential single-store transactions for iOS Safari reliability.
+// Two sequential single-store transactions for iOS Safari reliability.
 // Multi-store transactions left open after an early resolve corrupt subsequent
 // transactions in Safari's IndexedDB implementation.
 async function saveWorkoutSession(wSession) {
@@ -72,14 +70,20 @@ async function saveWorkoutSession(wSession) {
     tx.onerror    = e => reject(e.target.error);
   });
 
-  // Transaction 2: save all set records using the session_id from above.
+  // Transaction 2: save all set records.
+  // Resolve by counting individual req.onsuccess callbacks rather than
+  // waiting for tx.oncomplete, which is unreliable on iOS Safari.
   await new Promise((resolve, reject) => {
     const tx    = db.transaction('set_logs', 'readwrite');
     const store = tx.objectStore('set_logs');
 
+    let total     = 0;
+    let completed = 0;
+
     wSession.exerciseQueue.forEach(ex => {
       (wSession.sets[ex.id] || []).forEach(set => {
-        store.add({
+        total++;
+        const req = store.add({
           session_id:         sessionId,
           exercise_id:        ex.id,
           set_number:         set.setNumber,
@@ -90,11 +94,18 @@ async function saveWorkoutSession(wSession) {
           observations:       wSession.observations[ex.id]       || null,
           timestamp:          new Date().toISOString()
         });
+        req.onsuccess = () => {
+          completed++;
+          if (completed === total) resolve();
+        };
+        req.onerror = e => reject(e.target.error);
       });
     });
 
-    tx.oncomplete = () => resolve();
-    tx.onerror    = e => reject(e.target.error);
+    // Edge case: session with no sets (e.g. all exercises skipped)
+    if (total === 0) resolve();
+
+    tx.onerror = e => reject(e.target.error);
   });
 
   console.log('DB: session saved, id =', sessionId);
@@ -109,8 +120,7 @@ async function saveBodyweightLog(weightKg, date, notes = null) {
   return new Promise((resolve, reject) => {
     const tx    = db.transaction('bodyweight_log', 'readwrite');
     const store = tx.objectStore('bodyweight_log');
-
-    const req = store.add({ date, weight_kg: weightKg, notes });
+    const req   = store.add({ date, weight_kg: weightKg, notes });
 
     req.onsuccess = () => {
       console.log('DB: bodyweight saved', weightKg, 'kg on', date);
@@ -122,7 +132,6 @@ async function saveBodyweightLog(weightKg, date, notes = null) {
 
 
 // ── GET LAST BODYWEIGHT ──
-// Returns the most recently saved weight_kg, or null if none exists.
 async function getLastBodyweight() {
   const db = await dbReady;
 
@@ -134,16 +143,12 @@ async function getLastBodyweight() {
       const cursor = e.target.result;
       resolve(cursor ? cursor.value.weight_kg : null);
     };
-
     req.onerror = e => reject(e.target.error);
   });
 }
 
 
 // ── GET LAST WEIGHTS FOR EXERCISE ──
-// Returns { [setNumber]: weightKg } from the most recent session
-// that contains data for this exercise_id.
-// Returns {} if no prior data exists.
 async function getLastWeightForExercise(exerciseId) {
   const db = await dbReady;
 
@@ -165,15 +170,12 @@ async function getLastWeightForExercise(exerciseId) {
 
       resolve(weights);
     };
-
     req.onerror = e => reject(e.target.error);
   });
 }
 
 
 // ── GET LAST MACHINE ADJUSTMENT FOR EXERCISE ──
-// Returns the most recently saved machine_adjustment string for this exercise,
-// or null if none has ever been recorded.
 async function getLastMachineAdjustmentForExercise(exerciseId) {
   const db = await dbReady;
 
@@ -186,14 +188,12 @@ async function getLastMachineAdjustmentForExercise(exerciseId) {
       const records = e.target.result;
       if (!records.length) { resolve(null); return; }
 
-      // Find the most recent record that has a non-null machine_adjustment.
       const match = records
         .filter(r => r.machine_adjustment !== null)
         .sort((a, b) => b.session_id - a.session_id);
 
       resolve(match.length ? match[0].machine_adjustment : null);
     };
-
     req.onerror = e => reject(e.target.error);
   });
 }
