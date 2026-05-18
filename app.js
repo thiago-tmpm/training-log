@@ -59,7 +59,6 @@ function updateHomeWorkoutDisplay(dayKey) {
     nameEl.textContent = 'Rest Day';
     nameEl.classList.add('rest-day');
     startBtn.classList.add('hidden');
-    // Still show chevron so user can select a workout on rest days
     chevron.style.display = '';
   }
 }
@@ -115,6 +114,9 @@ document.addEventListener('DOMContentLoaded', () => {
     .addEventListener('click', () => showScreen('screen-bodyweight'));
 
   // Exercise screen
+  document.getElementById('btn-prev-exercise')
+    .addEventListener('click', prevExercise);
+
   document.getElementById('btn-skip-exercise')
     .addEventListener('click', openSkipSheet);
 

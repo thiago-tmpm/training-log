@@ -48,65 +48,57 @@ const dbReady = new Promise((resolve, reject) => {
 });
 
 
+// ── IDBR EQUEST HELPER ──
+// Wraps a single IDBRequest in a Promise.
+// Each call opens its own transaction, keeping each operation
+// small and independent — the most reliable pattern on iOS Safari.
+function idbRequest(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = e => resolve(e.target.result);
+    request.onerror   = e => reject(e.target.error);
+  });
+}
+
+
 // ── SAVE WORKOUT SESSION ──
-// Two sequential single-store transactions for iOS Safari reliability.
-// Multi-store transactions left open after an early resolve corrupt subsequent
-// transactions in Safari's IndexedDB implementation.
+// One transaction for the session record, then one transaction per set.
+// Sequential, maximally simple — avoids all multi-request transaction
+// reliability issues on iOS Safari.
 async function saveWorkoutSession(wSession) {
   const db = await dbReady;
 
-  // Transaction 1: save the session record, get the generated session_id.
-  const sessionId = await new Promise((resolve, reject) => {
-    const tx  = db.transaction('workout_sessions', 'readwrite');
-    const req = tx.objectStore('workout_sessions').add({
-      workout_day: wSession.workoutDay,
-      date:        wSession.date,
-      start_time:  wSession.startTime,
-      end_time:    wSession.endTime
-    });
+  // Step 1: save the session record and get its generated ID.
+  const sessionId = await idbRequest(
+    db.transaction('workout_sessions', 'readwrite')
+      .objectStore('workout_sessions')
+      .add({
+        workout_day: wSession.workoutDay,
+        date:        wSession.date,
+        start_time:  wSession.startTime,
+        end_time:    wSession.endTime
+      })
+  );
 
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
-    tx.onerror    = e => reject(e.target.error);
-  });
-
-  // Transaction 2: save all set records.
-  // Resolve by counting individual req.onsuccess callbacks rather than
-  // waiting for tx.oncomplete, which is unreliable on iOS Safari.
-  await new Promise((resolve, reject) => {
-    const tx    = db.transaction('set_logs', 'readwrite');
-    const store = tx.objectStore('set_logs');
-
-    let total     = 0;
-    let completed = 0;
-
-    wSession.exerciseQueue.forEach(ex => {
-      (wSession.sets[ex.id] || []).forEach(set => {
-        total++;
-        const req = store.add({
-          session_id:         sessionId,
-          exercise_id:        ex.id,
-          set_number:         set.setNumber,
-          weight_kg:          set.weightKg !== '' ? parseFloat(set.weightKg) : null,
-          reps:               set.reps     !== '' ? parseInt(set.reps, 10)   : null,
-          failure:            set.failure,
-          machine_adjustment: wSession.machineAdjustments[ex.id] || null,
-          observations:       wSession.observations[ex.id]       || null,
-          timestamp:          new Date().toISOString()
-        });
-        req.onsuccess = () => {
-          completed++;
-          if (completed === total) resolve();
-        };
-        req.onerror = e => reject(e.target.error);
-      });
-    });
-
-    // Edge case: session with no sets (e.g. all exercises skipped)
-    if (total === 0) resolve();
-
-    tx.onerror = e => reject(e.target.error);
-  });
+  // Step 2: save each set record in its own transaction.
+  for (const ex of wSession.exerciseQueue) {
+    for (const set of (wSession.sets[ex.id] || [])) {
+      await idbRequest(
+        db.transaction('set_logs', 'readwrite')
+          .objectStore('set_logs')
+          .add({
+            session_id:         sessionId,
+            exercise_id:        ex.id,
+            set_number:         set.setNumber,
+            weight_kg:          set.weightKg !== '' ? parseFloat(set.weightKg) : null,
+            reps:               set.reps     !== '' ? parseInt(set.reps, 10)   : null,
+            failure:            set.failure,
+            machine_adjustment: wSession.machineAdjustments[ex.id] || null,
+            observations:       wSession.observations[ex.id]       || null,
+            timestamp:          new Date().toISOString()
+          })
+      );
+    }
+  }
 
   console.log('DB: session saved, id =', sessionId);
   return sessionId;
@@ -117,16 +109,13 @@ async function saveWorkoutSession(wSession) {
 async function saveBodyweightLog(weightKg, date, notes = null) {
   const db = await dbReady;
 
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction('bodyweight_log', 'readwrite');
-    const store = tx.objectStore('bodyweight_log');
-    const req   = store.add({ date, weight_kg: weightKg, notes });
-
-    req.onsuccess = () => {
-      console.log('DB: bodyweight saved', weightKg, 'kg on', date);
-      resolve(req.result);
-    };
-    req.onerror = e => reject(e.target.error);
+  return idbRequest(
+    db.transaction('bodyweight_log', 'readwrite')
+      .objectStore('bodyweight_log')
+      .add({ date, weight_kg: weightKg, notes })
+  ).then(id => {
+    console.log('DB: bodyweight saved', weightKg, 'kg on', date);
+    return id;
   });
 }
 
@@ -136,8 +125,9 @@ async function getLastBodyweight() {
   const db = await dbReady;
 
   return new Promise((resolve, reject) => {
-    const tx  = db.transaction('bodyweight_log', 'readonly');
-    const req = tx.objectStore('bodyweight_log').openCursor(null, 'prev');
+    const req = db.transaction('bodyweight_log', 'readonly')
+      .objectStore('bodyweight_log')
+      .openCursor(null, 'prev');
 
     req.onsuccess = e => {
       const cursor = e.target.result;
@@ -148,52 +138,62 @@ async function getLastBodyweight() {
 }
 
 
-// ── GET LAST WEIGHTS FOR EXERCISE ──
-async function getLastWeightForExercise(exerciseId) {
+// ── GET LAST SESSION DATA FOR WORKOUT ──
+// Single readonly transaction that reads all set_logs data for every
+// exercise in the workout at once. Returns:
+//   { [exercise_id]: { weights: { [setNumber]: kg }, machineAdjustment: string|null } }
+// Replaces the previous per-exercise functions that opened 12 concurrent
+// transactions, which caused reliability issues on iOS Safari.
+async function getLastSessionDataForWorkout(exerciseIds) {
   const db = await dbReady;
 
-  return new Promise((resolve, reject) => {
-    const tx    = db.transaction('set_logs', 'readonly');
-    const index = tx.objectStore('set_logs').index('by_exercise');
-    const req   = index.getAll(exerciseId);
-
-    req.onsuccess = e => {
-      const records = e.target.result;
-      if (!records.length) { resolve({}); return; }
-
-      const maxSession = Math.max(...records.map(r => r.session_id));
-      const weights    = {};
-
-      records
-        .filter(r => r.session_id === maxSession && r.weight_kg !== null)
-        .forEach(r => { weights[r.set_number] = r.weight_kg; });
-
-      resolve(weights);
-    };
-    req.onerror = e => reject(e.target.error);
+  // Build result structure with empty defaults for every exercise.
+  const results = {};
+  exerciseIds.forEach(id => {
+    results[id] = { weights: {}, machineAdjustment: null };
   });
-}
 
-
-// ── GET LAST MACHINE ADJUSTMENT FOR EXERCISE ──
-async function getLastMachineAdjustmentForExercise(exerciseId) {
-  const db = await dbReady;
+  if (exerciseIds.length === 0) return results;
 
   return new Promise((resolve, reject) => {
     const tx    = db.transaction('set_logs', 'readonly');
     const index = tx.objectStore('set_logs').index('by_exercise');
-    const req   = index.getAll(exerciseId);
 
-    req.onsuccess = e => {
-      const records = e.target.result;
-      if (!records.length) { resolve(null); return; }
+    let pending = exerciseIds.length;
 
-      const match = records
-        .filter(r => r.machine_adjustment !== null)
-        .sort((a, b) => b.session_id - a.session_id);
+    exerciseIds.forEach(exerciseId => {
+      const req = index.getAll(exerciseId);
 
-      resolve(match.length ? match[0].machine_adjustment : null);
-    };
-    req.onerror = e => reject(e.target.error);
+      req.onsuccess = e => {
+        const records = e.target.result;
+
+        if (records.length) {
+          const maxSession = Math.max(...records.map(r => r.session_id));
+
+          // Weights from the most recent session
+          records
+            .filter(r => r.session_id === maxSession && r.weight_kg !== null)
+            .forEach(r => {
+              results[exerciseId].weights[r.set_number] = r.weight_kg;
+            });
+
+          // Most recent machine adjustment across all sessions
+          const withAdj = records
+            .filter(r => r.machine_adjustment !== null)
+            .sort((a, b) => b.session_id - a.session_id);
+
+          if (withAdj.length) {
+            results[exerciseId].machineAdjustment = withAdj[0].machine_adjustment;
+          }
+        }
+
+        pending--;
+        if (pending === 0) resolve(results);
+      };
+
+      req.onerror = e => reject(e.target.error);
+    });
+
+    tx.onerror = e => reject(e.target.error);
   });
 }

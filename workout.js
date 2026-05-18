@@ -32,24 +32,25 @@ async function startWorkout(dayKey) {
     }));
   });
 
-  // Fetch last weights and machine adjustments for all exercises concurrently.
-  const [weightResults, machineResults] = await Promise.all([
-    Promise.all(exercises.map(ex => getLastWeightForExercise(ex.id))),
-    Promise.all(exercises.map(ex => getLastMachineAdjustmentForExercise(ex.id)))
-  ]);
+  // Single transaction reads all prior data for every exercise at once.
+  const exerciseIds = exercises.map(ex => ex.id);
+  const lastData    = await getLastSessionDataForWorkout(exerciseIds);
 
-  exercises.forEach((ex, i) => {
-    const weights = weightResults[i];
-    wSession.prefillWeights[ex.id] = weights;
+  exercises.forEach(ex => {
+    const data = lastData[ex.id];
+
+    // Weight prefill
+    wSession.prefillWeights[ex.id] = data.weights;
     wSession.sets[ex.id].forEach(set => {
-      if (weights[set.setNumber] !== undefined) {
-        set.weightKg    = String(weights[set.setNumber]);
+      if (data.weights[set.setNumber] !== undefined) {
+        set.weightKg    = String(data.weights[set.setNumber]);
         set.isPrefilled = true;
       }
     });
 
-    if (machineResults[i]) {
-      wSession.machineAdjustments[ex.id] = machineResults[i];
+    // Machine adjustment prefill
+    if (data.machineAdjustment) {
+      wSession.machineAdjustments[ex.id] = data.machineAdjustment;
     }
   });
 
@@ -64,10 +65,14 @@ function renderExerciseScreen() {
   const total  = wSession.exerciseQueue.length;
   const pos    = wSession.currentIndex + 1;
   const isLast = pos === total;
+  const isFirst = wSession.currentIndex === 0;
 
   document.getElementById('ex-progress').textContent = `${pos} / ${total}`;
   document.getElementById('ex-name').textContent      = ex.name;
   document.getElementById('ex-rep-range').textContent = ex.repRange;
+
+  // Show back button only when there is a previous exercise
+  document.getElementById('btn-prev-exercise').classList.toggle('hidden', isFirst);
 
   renderSetRows(ex);
 
@@ -186,11 +191,18 @@ function handleFailureToggle(e) {
 }
 
 
-// ── NEXT EXERCISE ──
-function nextExercise() {
+// ── SAVE CURRENT EXERCISE EXTRAS ──
+// Called before navigating away from an exercise in either direction.
+function saveCurrentExtras() {
   const ex = wSession.exerciseQueue[wSession.currentIndex];
   wSession.machineAdjustments[ex.id] = document.getElementById('input-machine-adj').value;
   wSession.observations[ex.id]       = document.getElementById('input-observations').value;
+}
+
+
+// ── NEXT EXERCISE ──
+function nextExercise() {
+  saveCurrentExtras();
 
   if (wSession.currentIndex === wSession.exerciseQueue.length - 1) {
     finishWorkout();
@@ -198,6 +210,14 @@ function nextExercise() {
     wSession.currentIndex++;
     renderExerciseScreen();
   }
+}
+
+
+// ── PREVIOUS EXERCISE ──
+function prevExercise() {
+  saveCurrentExtras();
+  wSession.currentIndex--;
+  renderExerciseScreen();
 }
 
 

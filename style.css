@@ -48,7 +48,7 @@ body {
 .screen {
   display: none;
   flex-direction: column;
-  min-height: 100dvh;           /* dvh = dynamic viewport height, handles iOS browser bar */
+  min-height: 100dvh;
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
   padding-left: max(20px, var(--safe-left));
@@ -216,7 +216,6 @@ body {
    EXERCISE SCREEN
 ═══════════════════════════════════════════ */
 
-/* Fixed height so header + footer stay put and body scrolls */
 #screen-exercise {
   height: 100dvh;
   max-height: 100dvh;
@@ -237,6 +236,19 @@ body {
   color: var(--text-muted);
   letter-spacing: 0.06em;
 }
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 8px 20px 8px 0;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+.back-btn:active  { color: var(--text); }
+.back-btn.hidden  { visibility: hidden; }
 
 .skip-btn {
   background: none;
