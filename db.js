@@ -121,17 +121,22 @@ async function saveBodyweightLog(weightKg, date, notes = null) {
 
 
 // ── GET LAST BODYWEIGHT ──
+// Uses getAll() instead of a cursor to avoid leaving an abandoned cursor
+// open on iOS Safari, which can block subsequent write transactions on
+// the same store.
 async function getLastBodyweight() {
   const db = await dbReady;
 
   return new Promise((resolve, reject) => {
     const req = db.transaction('bodyweight_log', 'readonly')
       .objectStore('bodyweight_log')
-      .openCursor(null, 'prev');
+      .getAll();
 
     req.onsuccess = e => {
-      const cursor = e.target.result;
-      resolve(cursor ? cursor.value.weight_kg : null);
+      const records = e.target.result;
+      if (!records.length) { resolve(null); return; }
+      // autoIncrement IDs mean the last record is always the most recent.
+      resolve(records[records.length - 1].weight_kg);
     };
     req.onerror = e => reject(e.target.error);
   });
@@ -142,12 +147,9 @@ async function getLastBodyweight() {
 // Single readonly transaction that reads all set_logs data for every
 // exercise in the workout at once. Returns:
 //   { [exercise_id]: { weights: { [setNumber]: kg }, machineAdjustment: string|null } }
-// Replaces the previous per-exercise functions that opened 12 concurrent
-// transactions, which caused reliability issues on iOS Safari.
 async function getLastSessionDataForWorkout(exerciseIds) {
   const db = await dbReady;
 
-  // Build result structure with empty defaults for every exercise.
   const results = {};
   exerciseIds.forEach(id => {
     results[id] = { weights: {}, machineAdjustment: null };
@@ -170,14 +172,12 @@ async function getLastSessionDataForWorkout(exerciseIds) {
         if (records.length) {
           const maxSession = Math.max(...records.map(r => r.session_id));
 
-          // Weights from the most recent session
           records
             .filter(r => r.session_id === maxSession && r.weight_kg !== null)
             .forEach(r => {
               results[exerciseId].weights[r.set_number] = r.weight_kg;
             });
 
-          // Most recent machine adjustment across all sessions
           const withAdj = records
             .filter(r => r.machine_adjustment !== null)
             .sort((a, b) => b.session_id - a.session_id);
