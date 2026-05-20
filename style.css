@@ -13,7 +13,6 @@
   --font-body:    'Barlow', sans-serif;
   --font-mono:    'Roboto Mono', monospace;
 
-  /* Safe area insets for notched iPhones */
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left:   env(safe-area-inset-left, 0px);
@@ -521,6 +520,22 @@ body {
   font-size: 28px;
   padding: 14px 0;
   -webkit-appearance: none;
+}
+
+/* ── DIAGNOSTIC SAVE LOG ── */
+/* Remove this block once the stuck-button bug is resolved. */
+.save-log {
+  padding: 12px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.save-log p {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.6;
 }
 
 .end-footer {

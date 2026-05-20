@@ -32,14 +32,12 @@ async function startWorkout(dayKey) {
     }));
   });
 
-  // Single transaction reads all prior data for every exercise at once.
   const exerciseIds = exercises.map(ex => ex.id);
   const lastData    = await getLastSessionDataForWorkout(exerciseIds);
 
   exercises.forEach(ex => {
     const data = lastData[ex.id];
 
-    // Weight prefill
     wSession.prefillWeights[ex.id] = data.weights;
     wSession.sets[ex.id].forEach(set => {
       if (data.weights[set.setNumber] !== undefined) {
@@ -48,7 +46,6 @@ async function startWorkout(dayKey) {
       }
     });
 
-    // Machine adjustment prefill
     if (data.machineAdjustment) {
       wSession.machineAdjustments[ex.id] = data.machineAdjustment;
     }
@@ -61,27 +58,24 @@ async function startWorkout(dayKey) {
 
 // ── RENDER EXERCISE SCREEN ──
 function renderExerciseScreen() {
-  const ex     = wSession.exerciseQueue[wSession.currentIndex];
-  const total  = wSession.exerciseQueue.length;
-  const pos    = wSession.currentIndex + 1;
-  const isLast = pos === total;
+  const ex      = wSession.exerciseQueue[wSession.currentIndex];
+  const total   = wSession.exerciseQueue.length;
+  const pos     = wSession.currentIndex + 1;
+  const isLast  = pos === total;
   const isFirst = wSession.currentIndex === 0;
 
   document.getElementById('ex-progress').textContent = `${pos} / ${total}`;
   document.getElementById('ex-name').textContent      = ex.name;
   document.getElementById('ex-rep-range').textContent = ex.repRange;
 
-  // Show back button only when there is a previous exercise
   document.getElementById('btn-prev-exercise').classList.toggle('hidden', isFirst);
 
   renderSetRows(ex);
 
-  // Observations — always collapsed
   document.getElementById('input-observations').value = wSession.observations[ex.id] || '';
   document.getElementById('observations-content').classList.add('hidden');
   document.getElementById('btn-observations').textContent = '+ Observations';
 
-  // Machine adjustment — auto-expand if a value exists
   const machAdj = wSession.machineAdjustments[ex.id] || '';
   document.getElementById('input-machine-adj').value = machAdj;
 
@@ -162,8 +156,6 @@ function renderSetRows(ex) {
 
 
 // ── INPUT HANDLERS ──
-
-// setTimeout defers select() past iOS Safari's own cursor positioning.
 function handleWeightFocus(e) {
   const input = e.target;
   setTimeout(() => input.select(), 0);
@@ -192,7 +184,6 @@ function handleFailureToggle(e) {
 
 
 // ── SAVE CURRENT EXERCISE EXTRAS ──
-// Called before navigating away from an exercise in either direction.
 function saveCurrentExtras() {
   const ex = wSession.exerciseQueue[wSession.currentIndex];
   wSession.machineAdjustments[ex.id] = document.getElementById('input-machine-adj').value;
@@ -267,26 +258,92 @@ async function finishWorkout() {
   const bwInput = document.getElementById('input-bodyweight');
   bwInput.value = lastBw !== null ? String(lastBw) : '';
 
+  // Clear any previous diagnostic log
+  const log = document.getElementById('save-log');
+  if (log) log.innerHTML = '';
+
   showScreen('screen-session-end');
 }
 
 
-// ── SAVE SESSION ──
+// ── SAVE SESSION (DIAGNOSTIC) ──
+// Logs each step on-screen so we can identify exactly where it hangs.
+// Remove the save-log div and revert this function once the bug is fixed.
 async function saveSession() {
   const btn = document.getElementById('btn-finish-session');
   btn.disabled    = true;
   btn.textContent = 'Saving...';
+
+  function step(msg) {
+    const log = document.getElementById('save-log');
+    if (!log) return;
+    const p = document.createElement('p');
+    p.textContent = msg;
+    log.appendChild(p);
+  }
 
   const bwInput  = document.getElementById('input-bodyweight').value.trim();
   const weightKg = bwInput ? parseFloat(bwInput) : null;
   wSession.bodyweightKg = weightKg;
 
   try {
-    await saveWorkoutSession(wSession);
-    if (weightKg !== null) {
-      await saveBodyweightLog(weightKg, wSession.date);
+    step('1. awaiting DB...');
+    const db = await dbReady;
+    step('2. DB open. Saving session record...');
+
+    const sessionId = await idbRequest(
+      db.transaction('workout_sessions', 'readwrite')
+        .objectStore('workout_sessions')
+        .add({
+          workout_day: wSession.workoutDay,
+          date:        wSession.date,
+          start_time:  wSession.startTime,
+          end_time:    wSession.endTime
+        })
+    );
+    step(`3. session record saved (id ${sessionId}). Saving sets...`);
+
+    let n = 0;
+    for (const ex of wSession.exerciseQueue) {
+      for (const set of (wSession.sets[ex.id] || [])) {
+        n++;
+        step(`4. set ${n}...`);
+        await idbRequest(
+          db.transaction('set_logs', 'readwrite')
+            .objectStore('set_logs')
+            .add({
+              session_id:         sessionId,
+              exercise_id:        ex.id,
+              set_number:         set.setNumber,
+              weight_kg:          set.weightKg !== '' ? parseFloat(set.weightKg) : null,
+              reps:               set.reps     !== '' ? parseInt(set.reps, 10)   : null,
+              failure:            set.failure,
+              machine_adjustment: wSession.machineAdjustments[ex.id] || null,
+              observations:       wSession.observations[ex.id]       || null,
+              timestamp:          new Date().toISOString()
+            })
+        );
+        step(`4. set ${n} done.`);
+      }
     }
+
+    step('5. all sets saved.');
+
+    if (weightKg !== null) {
+      step('6. saving bodyweight...');
+      await idbRequest(
+        db.transaction('bodyweight_log', 'readwrite')
+          .objectStore('bodyweight_log')
+          .add({ date: wSession.date, weight_kg: weightKg, notes: null })
+      );
+      step('7. bodyweight saved.');
+    } else {
+      step('6. no bodyweight — skipped.');
+    }
+
+    step('✓ complete. Navigating...');
   } catch (err) {
+    step(`✗ error: ${err.message || String(err)}`);
     console.error('Failed to save session:', err);
     btn.disabled    = false;
     btn.textContent = 'Finish';
