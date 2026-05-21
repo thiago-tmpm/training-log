@@ -258,9 +258,13 @@ async function finishWorkout() {
   const bwInput = document.getElementById('input-bodyweight');
   bwInput.value = lastBw !== null ? String(lastBw) : '';
 
-  // Clear any previous diagnostic log
   const log = document.getElementById('save-log');
   if (log) log.innerHTML = '';
+
+  // Reset button in case a previous session left it disabled
+  const btn = document.getElementById('btn-finish-session');
+  btn.disabled    = false;
+  btn.textContent = 'Finish';
 
   showScreen('screen-session-end');
 }
