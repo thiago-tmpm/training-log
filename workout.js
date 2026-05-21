@@ -275,6 +275,7 @@ async function saveSession() {
   btn.textContent = 'Saving...';
 
   function step(msg) {
+    console.log('[saveSession]', msg);
     const log = document.getElementById('save-log');
     if (!log) return;
     const p = document.createElement('p');
@@ -344,7 +345,7 @@ async function saveSession() {
     step('✓ complete. Navigating...');
   } catch (err) {
     step(`✗ error: ${err.message || String(err)}`);
-    console.error('Failed to save session:', err);
+    console.error('[saveSession] FAILED:', err);
     btn.disabled    = false;
     btn.textContent = 'Finish';
     return;
