@@ -522,21 +522,6 @@ body {
   -webkit-appearance: none;
 }
 
-/* ── DIAGNOSTIC SAVE LOG ── */
-/* Remove this block once the stuck-button bug is resolved. */
-.save-log {
-  padding: 12px 0 4px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.save-log p {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-muted);
-  line-height: 1.6;
-}
 
 .end-footer {
   padding: 20px 0 8px;

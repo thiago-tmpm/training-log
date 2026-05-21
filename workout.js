@@ -258,9 +258,6 @@ async function finishWorkout() {
   const bwInput = document.getElementById('input-bodyweight');
   bwInput.value = lastBw !== null ? String(lastBw) : '';
 
-  const log = document.getElementById('save-log');
-  if (log) log.innerHTML = '';
-
   // Reset button in case a previous session left it disabled
   const btn = document.getElementById('btn-finish-session');
   btn.disabled    = false;
@@ -270,88 +267,24 @@ async function finishWorkout() {
 }
 
 
-// ── SAVE SESSION (DIAGNOSTIC) ──
-// Logs each step on-screen so we can identify exactly where it hangs.
-// Remove the save-log div and revert this function once the bug is fixed.
+// ── SAVE SESSION ──
 async function saveSession() {
   const btn = document.getElementById('btn-finish-session');
   btn.disabled    = true;
   btn.textContent = 'Saving...';
-
-  console.log('[saveSession] called. wSession is:', wSession);
-
-  function step(msg) {
-    console.log('[saveSession]', msg);
-    const log = document.getElementById('save-log');
-    if (!log) return;
-    const p = document.createElement('p');
-    p.textContent = msg;
-    log.appendChild(p);
-  }
 
   const bwInput  = document.getElementById('input-bodyweight').value.trim();
   const weightKg = bwInput ? parseFloat(bwInput) : null;
   wSession.bodyweightKg = weightKg;
 
   try {
-    step('1. awaiting DB...');
-    const db = await dbReady;
-    step('2. DB open. Saving session record...');
-
-    const sessionId = await idbRequest(
-      db.transaction('workout_sessions', 'readwrite')
-        .objectStore('workout_sessions')
-        .add({
-          workout_day: wSession.workoutDay,
-          date:        wSession.date,
-          start_time:  wSession.startTime,
-          end_time:    wSession.endTime
-        })
-    );
-    step(`3. session record saved (id ${sessionId}). Saving sets...`);
-
-    let n = 0;
-    for (const ex of wSession.exerciseQueue) {
-      for (const set of (wSession.sets[ex.id] || [])) {
-        n++;
-        step(`4. set ${n}...`);
-        await idbRequest(
-          db.transaction('set_logs', 'readwrite')
-            .objectStore('set_logs')
-            .add({
-              session_id:         sessionId,
-              exercise_id:        ex.id,
-              set_number:         set.setNumber,
-              weight_kg:          set.weightKg !== '' ? parseFloat(set.weightKg) : null,
-              reps:               set.reps     !== '' ? parseInt(set.reps, 10)   : null,
-              failure:            set.failure,
-              machine_adjustment: wSession.machineAdjustments[ex.id] || null,
-              observations:       wSession.observations[ex.id]       || null,
-              timestamp:          new Date().toISOString()
-            })
-        );
-        step(`4. set ${n} done.`);
-      }
-    }
-
-    step('5. all sets saved.');
+    await saveWorkoutSession(wSession);
 
     if (weightKg !== null) {
-      step('6. saving bodyweight...');
-      await idbRequest(
-        db.transaction('bodyweight_log', 'readwrite')
-          .objectStore('bodyweight_log')
-          .add({ date: wSession.date, weight_kg: weightKg, notes: null })
-      );
-      step('7. bodyweight saved.');
-    } else {
-      step('6. no bodyweight — skipped.');
+      await saveBodyweightLog(weightKg, wSession.date);
     }
-
-    step('✓ complete. Navigating...');
   } catch (err) {
-    step(`✗ error: ${err.message || String(err)}`);
-    console.error('[saveSession] FAILED:', err);
+    console.error('saveSession failed:', err);
     btn.disabled    = false;
     btn.textContent = 'Finish';
     return;
