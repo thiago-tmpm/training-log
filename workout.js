@@ -274,6 +274,8 @@ async function saveSession() {
   btn.disabled    = true;
   btn.textContent = 'Saving...';
 
+  console.log('[saveSession] called. wSession is:', wSession);
+
   function step(msg) {
     console.log('[saveSession]', msg);
     const log = document.getElementById('save-log');
