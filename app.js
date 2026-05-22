@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   document.getElementById('btn-log-cardio')
-    .addEventListener('click', () => showScreen('screen-cardio'));
+    .addEventListener('click', () => showScreen('screen-cardio-type'));
 
   document.getElementById('btn-bodyweight')
     .addEventListener('click', () => showScreen('screen-bodyweight'));

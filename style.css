@@ -625,3 +625,235 @@ body {
   flex-shrink: 0;
   margin-top: 10px;
 }
+
+
+/* ═══════════════════════════════════════════
+   CARDIO SCREENS
+═══════════════════════════════════════════ */
+
+/* ── Shared cardio header ── */
+.cardio-type-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 12px;
+}
+
+.cardio-screen-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+/* ── Type selection ── */
+.cardio-type-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0 32px;
+}
+
+.cardio-type-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  border: none;
+  border-radius: 12px;
+  padding: 28px 24px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+}
+
+.cardio-type-card:active {
+  background: var(--surface-2);
+}
+
+.cardio-type-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.cardio-type-label {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.05em;
+}
+
+/* ── Cardio log form ── */
+.cardio-log-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardio-log-footer {
+  flex-shrink: 0;
+  padding: 12px 0 16px;
+}
+
+.cardio-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardio-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cardio-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+}
+
+.cardio-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 0 12px;
+  gap: 8px;
+}
+
+.cardio-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  padding: 14px 0;
+  -webkit-appearance: none;
+}
+
+.cardio-input::placeholder {
+  color: var(--text-muted);
+}
+
+.cardio-input.input-error {
+  color: var(--danger);
+}
+
+.cardio-input-wrap:has(.input-error) {
+  outline: 1.5px solid var(--danger);
+}
+
+.cardio-unit {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cardio-date-input {
+  background: var(--surface);
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  padding: 14px 16px;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  outline: none;
+}
+
+.cardio-divider {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-align: center;
+  border-top: 1px solid var(--surface-2);
+  padding-top: 16px;
+}
+
+/* ── Effort selector ── */
+.effort-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.effort-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.effort-btn {
+  flex: 1;
+  height: 52px;
+  background: var(--surface);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-appearance: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.effort-btn.selected {
+  background: var(--accent);
+  color: #0D0D0D;
+}
+
+.effort-label-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  min-height: 18px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Cardio summary ── */
+#cardio-summary-stats {
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--surface);
+  border-bottom: 1px solid var(--surface);
+  padding: 20px 0;
+}
+
+#cardio-summary-stats .end-stat {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--surface);
+}
+
+#cardio-summary-stats .end-stat:last-child {
+  border-bottom: none;
+}
+
+#cardio-summary-stats .end-stat-value {
+  font-size: 20px;
+}

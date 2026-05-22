@@ -1,7 +1,7 @@
 'use strict';
 
 const DB_NAME    = 'training-log-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let _db = null;
 
@@ -32,6 +32,12 @@ const dbReady = new Promise((resolve, reject) => {
         keyPath: 'log_id', autoIncrement: true
       });
       bwStore.createIndex('by_date', 'date', { unique: false });
+    }
+
+    if (event.oldVersion < 2) {
+      db.createObjectStore('cardio_sessions', {
+        keyPath: 'session_id', autoIncrement: true
+      });
     }
   };
 
@@ -195,5 +201,46 @@ async function getLastSessionDataForWorkout(exerciseIds) {
     });
 
     tx.onerror = e => reject(e.target.error);
+  });
+}
+
+
+// ── GET LAST WORKOUT SESSION BY DATE ──
+// Returns the most recent workout session for a given date string, or null.
+async function getLastWorkoutSessionByDate(dateString) {
+  const db = await dbReady;
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('workout_sessions', 'readonly')
+      .objectStore('workout_sessions')
+      .getAll();
+    req.onsuccess = e => {
+      const matches = e.target.result.filter(s => s.date === dateString);
+      resolve(matches.length > 0 ? matches[matches.length - 1] : null);
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+// ── SAVE CARDIO SESSION ──
+async function saveCardioSessionToDB(cSession) {
+  const db = await dbReady;
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('cardio_sessions', 'readwrite')
+      .objectStore('cardio_sessions')
+      .add({
+        cardio_type:                cSession.cardioType,
+        date:                       cSession.date,
+        start_time:                 cSession.startTime,
+        end_time:                   cSession.endTime,
+        duration_minutes:           cSession.durationMinutes,
+        avg_heart_rate:             cSession.avgHeartRate,
+        active_kcal:                cSession.activeKcal,
+        total_kcal:                 cSession.totalKcal,
+        effort_level:               cSession.effortLevel,
+        linked_workout_session_id:  cSession.linkedWorkoutSessionId,
+        cardio_timing:              cSession.cardioTiming
+      });
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
   });
 }
