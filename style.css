@@ -711,12 +711,6 @@ body {
   gap: 8px;
 }
 
-.cardio-field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
 .cardio-label {
   font-family: var(--font-mono);
   font-size: 11px;
