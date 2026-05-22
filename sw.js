@@ -1,4 +1,4 @@
-const CACHE_NAME = 'training-log-v15';
+const CACHE_NAME = 'training-log-v16';
 
 const ASSETS = [
   './',
