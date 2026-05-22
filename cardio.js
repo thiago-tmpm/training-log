@@ -46,6 +46,11 @@ async function selectCardioType(type) {
 
 // ── RENDER CARDIO LOG SCREEN ──
 function renderCardioLog() {
+  // Reset save button — DOM is never destroyed between sessions, only hidden.
+  const btn = document.getElementById('btn-save-cardio');
+  btn.disabled    = false;
+  btn.textContent = 'Save';
+
   const titles = { run: 'RUN', bike: 'BIKE', other: 'OTHER' };
   document.getElementById('cardio-log-title').textContent = titles[cSession.cardioType];
   document.getElementById('cardio-date').value = cSession.date;
