@@ -14,6 +14,12 @@
   <link rel="stylesheet" href="./style.css">
   <title>Training Log</title>
 </head>
+
+<!-- WATER FAB — persistent across all screens -->
+  <button class="water-fab" id="btn-water-fab" aria-label="Log water bottle">
+    💧<span class="water-fab-count" id="fab-water-count"></span>
+  </button>
+
 <body>
 
   <!-- HOME SCREEN -->
@@ -41,6 +47,9 @@
     <div class="home-actions">
       <button class="btn-primary" id="btn-start-workout">Start Workout</button>
       <button class="btn-secondary" id="btn-log-cardio">Log Cardio</button>
+      <button class="btn-water-home" id="btn-water-home">
+        💧 Water — <span id="home-water-count">0</span>
+      </button>
     </div>
   </div>
 
