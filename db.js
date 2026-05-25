@@ -1,7 +1,7 @@
 'use strict';
 
 const DB_NAME    = 'training-log-db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let _db = null;
 
@@ -37,6 +37,12 @@ const dbReady = new Promise((resolve, reject) => {
     if (event.oldVersion < 2) {
       db.createObjectStore('cardio_sessions', {
         keyPath: 'session_id', autoIncrement: true
+      });
+    }
+
+    if (e.oldVersion < 3) {
+      db.createObjectStore('water_log', {
+        keyPath: 'log_id', autoIncrement: true
       });
     }
   };
@@ -242,5 +248,32 @@ async function saveCardioSessionToDB(cSession) {
       });
     req.onsuccess = e => resolve(e.target.result);
     req.onerror   = e => reject(e.target.error);
+  });
+}
+
+
+// ── LOG WATER BOTTLE ──
+// One record per tap: just a date and timestamp.
+async function logWaterBottle(dateString) {
+  const db = await dbReady;
+  return idbRequest(
+    db.transaction('water_log', 'readwrite')
+      .objectStore('water_log')
+      .add({ date: dateString, timestamp: new Date().toISOString() })
+  );
+}
+
+// ── GET WATER COUNT TODAY ──
+// Returns the number of bottles logged for a given date string.
+async function getWaterCountToday(dateString) {
+  const db = await dbReady;
+  return new Promise((resolve, reject) => {
+    const req = db.transaction('water_log', 'readonly')
+      .objectStore('water_log')
+      .getAll();
+    req.onsuccess = e => {
+      resolve(e.target.result.filter(r => r.date === dateString).length);
+    };
+    req.onerror = e => reject(e.target.error);
   });
 }

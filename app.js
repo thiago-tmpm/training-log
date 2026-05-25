@@ -42,6 +42,38 @@ function formatDate(date) {
 let selectedWorkoutDay = null;
 
 
+// ── WATER TRACKING ──
+let waterCount = 0;
+
+async function initWaterCount() {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    waterCount = await getWaterCountToday(today);
+  } catch (e) {
+    console.warn('Water: failed to load count', e);
+    waterCount = 0;
+  }
+  updateWaterDisplay();
+}
+
+function updateWaterDisplay() {
+  document.getElementById('home-water-count').textContent = waterCount;
+  const badge = document.getElementById('fab-water-count');
+  badge.textContent = waterCount > 0 ? waterCount : '';
+}
+
+async function handleWaterTap() {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    await logWaterBottle(today);
+    waterCount++;
+    updateWaterDisplay();
+  } catch (e) {
+    console.error('Water: log failed', e);
+  }
+}
+
+
 // ── UPDATE HOME DISPLAY ──
 function updateHomeWorkoutDisplay(dayKey) {
   selectedWorkoutDay = dayKey;
@@ -91,6 +123,7 @@ function initHome() {
 
   document.getElementById('home-date').textContent = formatDate(today);
   updateHomeWorkoutDisplay(dayKey);
+  innitWaterCount();
 }
 
 
@@ -112,6 +145,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-bodyweight')
     .addEventListener('click', () => showScreen('screen-bodyweight'));
+  
+    document.getElementById('btn-water-home')
+    .addEventListener('click', handleWaterTap);
+
+  document.getElementById('btn-water-fab')
+    .addEventListener('click', handleWaterTap);
 
   // Exercise screen
   document.getElementById('btn-prev-exercise')
