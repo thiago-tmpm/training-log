@@ -68,7 +68,9 @@ function renderExerciseScreen() {
   document.getElementById('ex-name').textContent      = ex.name;
   document.getElementById('ex-rep-range').textContent = ex.repRange;
 
-  document.getElementById('btn-prev-exercise').classList.toggle('hidden', isFirst);
+  const prevBtn = document.getElementById('btn-prev-exercise');
+  prevBtn.classList.remove('hidden');
+  prevBtn.textContent = isFirst ? '← Home' : '← Back';
 
   renderSetRows(ex);
 
@@ -206,6 +208,12 @@ function nextExercise() {
 
 // ── PREVIOUS EXERCISE ──
 function prevExercise() {
+  if (wSession.currentIndex === 0) {
+    wSession = null;
+    initHome();
+    showScreen('screen-home');
+    return;
+  }
   saveCurrentExtras();
   wSession.currentIndex--;
   renderExerciseScreen();
