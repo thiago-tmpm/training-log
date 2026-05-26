@@ -123,7 +123,7 @@ function initHome() {
 
   document.getElementById('home-date').textContent = formatDate(today);
   updateHomeWorkoutDisplay(dayKey);
-  innitWaterCount();
+  initWaterCount();
 }
 
 
