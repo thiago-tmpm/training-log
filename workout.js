@@ -91,6 +91,8 @@ function renderExerciseScreen() {
 
   document.getElementById('btn-next-exercise').textContent =
     isLast ? 'Finish Session' : 'Next Exercise';
+
+  positionWaterFab();
 }
 
 
@@ -310,4 +312,19 @@ function toggleExtras(contentId, btnId, label) {
   const btn         = document.getElementById(btnId);
   const isNowHidden = content.classList.toggle('hidden');
   btn.textContent   = isNowHidden ? `+ ${label}` : `− ${label}`;
+}
+
+// ── POSITION WATER FAB ──
+// Reads the Next Exercise button's actual position and aligns
+// the FAB center to it. requestAnimationFrame ensures the screen
+// is painted before we measure.
+function positionWaterFab() {
+  requestAnimationFrame(() => {
+    const btn = document.getElementById('btn-next-exercise');
+    const fab = document.getElementById('btn-water-fab');
+    if (!btn || !fab) return;
+    const rect       = btn.getBoundingClientRect();
+    const btnCenterY = rect.top + rect.height / 2;
+    fab.style.bottom = (window.innerHeight - btnCenterY - fab.offsetHeight / 2) + 'px';
+  });
 }
