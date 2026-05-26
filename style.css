@@ -881,7 +881,7 @@ body {
 /* Persistent FAB */
 .water-fab {
   position: fixed;
-  bottom: calc(28px + var(--safe-bottom));
+  bottom: calc(18px + var(--safe-bottom));
   left: max(20px, var(--safe-left));
   width: 52px;
   height: 52px;
