@@ -319,12 +319,13 @@ function toggleExtras(contentId, btnId, label) {
 // the FAB center to it. requestAnimationFrame ensures the screen
 // is painted before we measure.
 function positionWaterFab() {
-  requestAnimationFrame(() => {
+  setTimeout(() => {
     const btn = document.getElementById('btn-next-exercise');
     const fab = document.getElementById('btn-water-fab');
     if (!btn || !fab) return;
-    const rect       = btn.getBoundingClientRect();
+    const rect = btn.getBoundingClientRect();
+    if (rect.height === 0) return;
     const btnCenterY = rect.top + rect.height / 2;
-    fab.style.bottom = (window.innerHeight - btnCenterY - fab.offsetHeight / 2) + 'px';
-  });
+    fab.style.bottom = (window.innerHeight - btnCenterY - 26) + 'px';
+  }, 50);
 }
