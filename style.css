@@ -885,7 +885,7 @@ body {
   left: max(20px, var(--safe-left));
   width: 52px;
   height: 52px;
-  border-radius: 50%;
+  border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--surface-2);
   color: var(--text);
@@ -900,6 +900,10 @@ body {
   transition: background 0.12s ease;
 }
 .water-fab:active { background: var(--surface-2); }
+
+#screen-home.active ~ #btn-water-fab {
+  display: none;
+}
 
 /* Count badge — hidden when 0 (empty string) */
 .water-fab-count {
