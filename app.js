@@ -125,7 +125,10 @@ function initHome() {
   updateHomeWorkoutDisplay(dayKey);
   initWaterCount();
 
-  document.getElementById('btn-water-fab').style.bottom = '';
+  const fab = document.getElementById('btn-water-fab');
+  fab.style.top    = '';
+  fab.style.left   = '';
+  fab.style.bottom = '';
 }
 
 
