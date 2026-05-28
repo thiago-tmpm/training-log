@@ -883,8 +883,8 @@ body {
   position: fixed;
   bottom: calc(18px + var(--safe-bottom));
   left: max(20px, var(--safe-left));
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--surface-2);
