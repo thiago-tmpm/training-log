@@ -129,6 +129,7 @@ function initHome() {
   fab.style.top    = '';
   fab.style.left   = '';
   fab.style.bottom = '';
+  fab.style.opacity = '1';
 }
 
 

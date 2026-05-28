@@ -319,6 +319,8 @@ function toggleExtras(contentId, btnId, label) {
 // the FAB center to it. requestAnimationFrame ensures the screen
 // is painted before we measure.
 function positionWaterFab() {
+  const fab = document.getElementById('btn-water-fab');
+  if (fab) fab.style.opacity = '0';
   setTimeout(() => {
     const btn = document.getElementById('btn-next-exercise');
     const fab = document.getElementById('btn-water-fab');
@@ -329,5 +331,6 @@ function positionWaterFab() {
     fab.style.top    = (rect.top  + gap) + 'px';
     fab.style.left   = (rect.left + 12 + gap) + 'px';
     fab.style.bottom = 'auto';
+    fab.style.opacity = '1';
   }, 50);
 }
