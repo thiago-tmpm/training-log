@@ -885,7 +885,7 @@ body {
   left: max(20px, var(--safe-left));
   width: 52px;
   height: 52px;
-  border-radius: 10px;
+  border-radius: 50px;
   background: var(--surface);
   border: 1px solid var(--surface-2);
   color: var(--text);
