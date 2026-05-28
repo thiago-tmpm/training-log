@@ -325,9 +325,9 @@ function positionWaterFab() {
     if (!btn || !fab) return;
     const rect = btn.getBoundingClientRect();
     if (rect.height === 0) return;
-    const btnCenterY = rect.top + rect.height / 2;
+    const gap = (rect.height - fab.offsetHeight) / 2;
     fab.style.top    = (rect.top  + gap) + 'px';
-    fab.style.left   = (rect.left + gap) + 'px';
+    fab.style.left   = (rect.left + 12 + gap) + 'px';
     fab.style.bottom = 'auto';
   }, 50);
 }
