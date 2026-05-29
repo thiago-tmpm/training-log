@@ -883,8 +883,8 @@ body {
   position: fixed;
   bottom: calc(18px + var(--safe-bottom));
   left: max(20px, var(--safe-left));
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   border-radius: 12px;
   background: var(--surface);
   border: 1px solid var(--surface-2);
@@ -906,8 +906,8 @@ body {
 }
 
 #screen-exercise.active ~ #btn-water-fab {
-  bottom: calc(var(--safe-bottom) + 28px);
-  left:   calc(max(20px, var(--safe-left)) + 12px);
+  bottom: calc(var(--safe-bottom) + 23px);
+  left:   calc(max(20px, var(--safe-left)) + 7px);
   top:    auto;
 }
 
