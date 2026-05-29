@@ -124,12 +124,6 @@ function initHome() {
   document.getElementById('home-date').textContent = formatDate(today);
   updateHomeWorkoutDisplay(dayKey);
   initWaterCount();
-
-  const fab = document.getElementById('btn-water-fab');
-  fab.style.top    = '';
-  fab.style.left   = '';
-  fab.style.bottom = '';
-  fab.style.opacity = '1';
 }
 
 

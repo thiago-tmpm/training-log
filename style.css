@@ -883,9 +883,9 @@ body {
   position: fixed;
   bottom: calc(18px + var(--safe-bottom));
   left: max(20px, var(--safe-left));
-  width: 52px;
-  height: 52px;
-  border-radius: 50px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   background: var(--surface);
   border: 1px solid var(--surface-2);
   color: var(--text);
@@ -905,11 +905,17 @@ body {
   display: none;
 }
 
+#screen-exercise.active ~ #btn-water-fab {
+  bottom: calc(var(--safe-bottom) + 28px);
+  left:   calc(max(20px, var(--safe-left)) + 12px);
+  top:    auto;
+}
+
 /* Count badge — hidden when 0 (empty string) */
 .water-fab-count {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: 2px;
+  right: 2px;
   background: var(--accent);
   color: #000;
   font-family: var(--font-mono);
