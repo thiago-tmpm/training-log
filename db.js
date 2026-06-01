@@ -34,7 +34,7 @@ const dbReady = new Promise((resolve, reject) => {
       bwStore.createIndex('by_date', 'date', { unique: false });
     }
 
-    if (event.oldVersion < 2) {
+    if (e.oldVersion < 2) {
       db.createObjectStore('cardio_sessions', {
         keyPath: 'session_id', autoIncrement: true
       });
@@ -100,6 +100,7 @@ async function saveWorkoutSession(wSession) {
           .add({
             session_id:         sessionId,
             exercise_id:        ex.id,
+            exercise_name:      ex.name,
             set_number:         set.setNumber,
             weight_kg:          set.weightKg !== '' ? parseFloat(set.weightKg) : null,
             reps:               set.reps     !== '' ? parseInt(set.reps, 10)   : null,
