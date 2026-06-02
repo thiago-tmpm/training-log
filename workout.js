@@ -3,6 +3,95 @@
 // ── WORKOUT SESSION STATE ──
 let wSession = null;
 
+// ── CRASH RECOVERY (WBS 4.5) ──
+// iOS may kill a backgrounded PWA at any time, discarding the in-memory
+// wSession. To survive that, the in-progress session is mirrored to
+// localStorage on every change and on backgrounding. On next load, an
+// unfinished draft triggers a resume prompt. This draft is transient
+// recovery state — deliberately kept out of IndexedDB (the clean dataset).
+const DRAFT_KEY = 'training-log-draft-session';
+
+function persistDraft() {
+  if (!wSession) return;
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(wSession));
+  } catch (e) {
+    console.warn('Draft: persist failed', e);
+  }
+}
+
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch (e) {
+    console.warn('Draft: clear failed', e);
+  }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.warn('Draft: load failed', e);
+    return null;
+  }
+}
+
+function isValidDraft(d) {
+  return d
+    && Array.isArray(d.exerciseQueue) && d.exerciseQueue.length > 0
+    && typeof d.currentIndex === 'number'
+    && d.sets && typeof d.sets === 'object';
+}
+
+// Called from app.js on load, after initHome().
+function maybeShowResumePrompt() {
+  const draft = loadDraft();
+  if (!isValidDraft(draft)) { clearDraft(); return; }
+
+  const label    = WORKOUT_DAY_LABELS[draft.workoutDay] || 'Workout';
+  const pos      = Math.min(draft.currentIndex + 1, draft.exerciseQueue.length);
+  const total    = draft.exerciseQueue.length;
+  const today    = new Date().toISOString().split('T')[0];
+  const dateNote = draft.date !== today ? ` · ${draft.date}` : '';
+
+  document.getElementById('resume-detail').textContent =
+    `${label} — exercise ${pos} of ${total}${dateNote}`;
+  openSheet('sheet-resume');
+}
+
+function resumeWorkout() {
+  const draft = loadDraft();
+  closeSheet('sheet-resume');
+  if (!isValidDraft(draft)) { clearDraft(); return; }
+
+  wSession = draft;
+  // Clamp in case the app was killed right after a skip emptied the tail.
+  if (wSession.currentIndex >= wSession.exerciseQueue.length) {
+    wSession.currentIndex = wSession.exerciseQueue.length - 1;
+  }
+  renderExerciseScreen();
+  showScreen('screen-exercise');
+}
+
+function discardWorkoutDraft() {
+  clearDraft();
+  wSession = null;
+  closeSheet('sheet-resume');
+}
+
+// Flush to storage the moment the app is backgrounded — the last reliable
+// point before iOS may suspend or kill it. Extras live only in the DOM until
+// saveCurrentExtras(), so flush them first when on the exercise screen.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'hidden' || !wSession) return;
+  if (document.getElementById('screen-exercise').classList.contains('active')) {
+    saveCurrentExtras();   // also persists
+  } else {
+    persistDraft();
+  }
+});
 
 // ── START SESSION ──
 async function startWorkout(dayKey) {
@@ -51,6 +140,7 @@ async function startWorkout(dayKey) {
     }
   });
 
+  persistDraft();
   renderExerciseScreen();
   showScreen('screen-exercise');
 }
@@ -172,6 +262,7 @@ function handleSetInput(e) {
     wSession.sets[ex][idx].isPrefilled = false;
     e.target.classList.remove('prefilled');
   }
+  persistDraft();
 }
 
 function handleFailureToggle(e) {
@@ -182,6 +273,7 @@ function handleFailureToggle(e) {
   wSession.sets[ex][idx].failure = newVal;
   btn.classList.toggle('active', newVal);
   btn.setAttribute('aria-pressed', String(newVal));
+  persistDraft();
 }
 
 
@@ -190,6 +282,7 @@ function saveCurrentExtras() {
   const ex = wSession.exerciseQueue[wSession.currentIndex];
   wSession.machineAdjustments[ex.id] = document.getElementById('input-machine-adj').value;
   wSession.observations[ex.id]       = document.getElementById('input-observations').value;
+  persistDraft();
 }
 
 
@@ -201,6 +294,7 @@ function nextExercise() {
     finishWorkout();
   } else {
     wSession.currentIndex++;
+    persistDraft();
     renderExerciseScreen();
   }
 }
@@ -216,6 +310,7 @@ function prevExercise() {
   }
   saveCurrentExtras();
   wSession.currentIndex--;
+  persistDraft();
   renderExerciseScreen();
 }
 
@@ -240,6 +335,7 @@ function skipExercise(mode) {
       wSession.currentIndex >= wSession.exerciseQueue.length) {
     finishWorkout();
   } else {
+    persistDraft();
     renderExerciseScreen();
   }
 }
@@ -298,6 +394,7 @@ async function saveSession() {
     return;
   }
 
+  clearDraft();
   wSession = null;
   initHome();
   showScreen('screen-home');

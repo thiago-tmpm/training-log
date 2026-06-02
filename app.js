@@ -130,6 +130,7 @@ function initHome() {
 // ── EVENT LISTENERS ──
 document.addEventListener('DOMContentLoaded', () => {
   initHome();
+  maybeShowResumePrompt();
 
   // Home
   document.getElementById('btn-select-day')
@@ -154,6 +155,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-water-fab')
     .addEventListener('click', handleWaterTap);
+
+  // Resume prompt
+  document.getElementById('btn-resume-yes')
+    .addEventListener('click', resumeWorkout);
+
+  document.getElementById('btn-resume-no')
+    .addEventListener('click', discardWorkoutDraft);
 
   // Exercise screen
   document.getElementById('btn-prev-exercise')

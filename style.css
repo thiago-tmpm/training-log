@@ -584,6 +584,14 @@ body {
   margin-bottom: 14px;
 }
 
+.sheet-text {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
 .sheet-options {
   display: flex;
   flex-direction: column;
