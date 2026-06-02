@@ -279,6 +279,7 @@ function handleFailureToggle(e) {
 
 // ── SAVE CURRENT EXERCISE EXTRAS ──
 function saveCurrentExtras() {
+  if (!wSession) return;
   const ex = wSession.exerciseQueue[wSession.currentIndex];
   wSession.machineAdjustments[ex.id] = document.getElementById('input-machine-adj').value;
   wSession.observations[ex.id]       = document.getElementById('input-observations').value;

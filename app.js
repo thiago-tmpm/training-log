@@ -173,6 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-next-exercise')
     .addEventListener('click', nextExercise);
 
+  // Persist extras on every keystroke so an abrupt kill mid-typing
+  // loses nothing. Textareas are static DOM, so bind once.
+  document.getElementById('input-machine-adj')
+    .addEventListener('input', saveCurrentExtras);
+  
+    document.getElementById('input-observations')
+    .addEventListener('input', saveCurrentExtras);
+
   // Session end screen
   document.getElementById('btn-finish-session')
     .addEventListener('click', saveSession);

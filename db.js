@@ -4,9 +4,6 @@ const DB_NAME    = 'training-log-db';
 const DB_VERSION = 3;
 
 let _db = null;
-
-
-let _db = null;
 let _dbPromise = null;
 
 
