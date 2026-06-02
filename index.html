@@ -21,14 +21,23 @@
   <div id="screen-home" class="screen active">
     <div class="home-header">
       <span class="home-date" id="home-date"></span>
-      <button class="icon-btn" id="btn-bodyweight" aria-label="Log bodyweight">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 7h16a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1 1 0 0 1 1-1z"/>
-          <path d="M8 7V5a4 4 0 0 1 8 0v2"/>
-          <line x1="12" y1="12" x2="12" y2="15"/>
-          <line x1="10" y1="13.5" x2="14" y2="13.5"/>
-        </svg>
-      </button>
+      <div class="home-header-actions">
+        <button class="icon-btn" id="btn-export" aria-label="Export data">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <path d="M5 19h14"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="btn-bodyweight" aria-label="Log bodyweight">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a1 1 0 0 1 1-1z"/>
+            <path d="M8 7V5a4 4 0 0 1 8 0v2"/>
+            <line x1="12" y1="12" x2="12" y2="15"/>
+            <line x1="10" y1="13.5" x2="14" y2="13.5"/>
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="home-hero">
       <p class="home-label">TODAY</p>
@@ -258,6 +267,7 @@
   <script src="./app.js"></script>
   <script src="./workout.js"></script>
   <script src="./cardio.js"></script>
+  <script src="./export.js"></script>
 
 
   <!-- WATER FAB — persistent across all screens -->

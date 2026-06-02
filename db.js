@@ -278,3 +278,17 @@ async function getWaterCountToday(dateString) {
     req.onerror = e => reject(e.target.error);
   });
 }
+
+// ── GET ALL RECORDS FROM A STORE ──
+// Generic single-store readonly read. Used by CSV export. Same getAll()
+// pattern as the other readers — no cursors, one store per transaction.
+async function getAllRecords(storeName) {
+  const db = await dbReady;
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(storeName, 'readonly')
+      .objectStore(storeName)
+      .getAll();
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e.target.error);
+  });
+}

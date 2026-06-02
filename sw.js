@@ -1,4 +1,4 @@
-const CACHE_NAME = 'training-log-v33';
+const CACHE_NAME = 'training-log-v34';
 
 const ASSETS = [
   './',
@@ -9,6 +9,7 @@ const ASSETS = [
   './app.js',
   './workout.js',
   './cardio.js',
+  './export.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'

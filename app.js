@@ -145,6 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-bodyweight')
     .addEventListener('click', () => showScreen('screen-bodyweight'));
+
+  document.getElementById('btn-export')
+    .addEventListener('click', exportAllData);
   
     document.getElementById('btn-water-home')
     .addEventListener('click', handleWaterTap);
