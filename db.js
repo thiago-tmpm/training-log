@@ -1,10 +1,11 @@
 'use strict';
 
 const DB_NAME    = 'training-log-db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let _db = null;
 let _dbPromise = null;
+let _upgradeOldVersion = null;   // set in onupgradeneeded only when an upgrade actually runs; gates the v4 seed
 
 
 // ── OPEN / INIT ──
@@ -19,6 +20,7 @@ function openDB() {
 
     request.onupgradeneeded = e => {
       const db = e.target.result;
+      _upgradeOldVersion = e.oldVersion;   // captured for the post-open v4 seed gate
 
       if (!db.objectStoreNames.contains('workout_sessions')) {
         db.createObjectStore('workout_sessions', {
@@ -51,6 +53,29 @@ function openDB() {
         db.createObjectStore('water_log', {
           keyPath: 'log_id', autoIncrement: true
         });
+      }
+
+      // ── v4: WORKOUTS BECOME USER DATA (Phase 2.1) ──
+      // Create the three stores EMPTY here. Seeding the author's device from
+      // the hardcoded constants happens AFTER open (see maybeSeedV4), using
+      // the single-store pattern. The versionchange transaction inside
+      // onupgradeneeded spans every store at once — exactly the multi-store
+      // shape the decisions log says hangs silently on iOS Safari — so NO
+      // data writes happen in here.
+      if (!db.objectStoreNames.contains('exercises')) {
+        // keyPath is the app-assigned string ID, NOT autoIncrement.
+        // exercise_id is permanent identity and the join key for set_logs.
+        const exStore = db.createObjectStore('exercises', { keyPath: 'exercise_id' });
+        // by_day: lets the builder/logger fetch a day's exercises directly.
+        // Added now because creating an index later needs another version bump;
+        // additive and free. Remove if you'd rather defer.
+        exStore.createIndex('by_day', 'workout_day', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('workout_days')) {
+        db.createObjectStore('workout_days', { keyPath: 'workout_day_key' });
+      }
+      if (!db.objectStoreNames.contains('workout_schedule')) {
+        db.createObjectStore('workout_schedule', { keyPath: 'day_of_week' });
       }
     };
 
@@ -101,8 +126,11 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// Open eagerly at startup, preserving the original load behaviour.
-getDB();
+// Open eagerly at startup, preserving the original load behaviour, then run
+// the one-time v4 seed if this device owes one (the author's v3 → v4 upgrade).
+getDB()
+  .then(maybeSeedV4)
+  .catch(err => console.error('DB: startup failed', err));
 
 
 // ── IDBR EQUEST HELPER ──
@@ -336,4 +364,137 @@ async function getAllRecords(storeName) {
     req.onsuccess = e => resolve(e.target.result);
     req.onerror   = e => reject(e.target.error);
   });
+}
+
+// ── v4 MIGRATION SEED + VERIFICATION (Phase 2.1) ──
+// One-time, author-only seed: copies the hardcoded exercise list, retired
+// list, day labels, and weekday schedule into the new stores WITH THEIR
+// EXISTING IDs, so historical set_logs stay joined. New users (fresh install,
+// oldVersion 0) seed nothing — they build their own workout later.
+//
+// Resumable: a localStorage flag marks the seed "pending" the instant the
+// upgrade is detected, cleared only after verification passes. onupgradeneeded
+// fires once per version bump and will NOT run again, but the flag survives an
+// app kill, so the next launch retries. Every write is an idempotent put()
+// keyed on the store's keyPath — a retry overwrites with identical data
+// instead of duplicating or throwing.
+
+const SEED_FLAG_KEY = 'training-log-seed-v4';
+
+// Write every record of one store in a single single-store transaction.
+// Completion is counted via req.onsuccess (tx.oncomplete is unreliable on iOS).
+function seedStore(db, storeName, records) {
+  return new Promise((resolve, reject) => {
+    if (records.length === 0) { resolve(); return; }
+    const store = db.transaction(storeName, 'readwrite').objectStore(storeName);
+    let remaining = records.length;
+    let rejected  = false;
+    records.forEach(rec => {
+      const req = store.put(rec);
+      req.onsuccess = () => { if (!rejected && --remaining === 0) resolve(); };
+      req.onerror   = e => { if (!rejected) { rejected = true; reject(e.target.error); } };
+    });
+  });
+}
+
+async function seedV4(db) {
+  // exercises: active (status 'active', sort_order = 0-based position in its
+  // day) + retired (status 'retired'). camelCase constants → snake_case store
+  // fields, matching the data-model doc and the CSV/export convention.
+  const exerciseRecords = [];
+  Object.entries(EXERCISES).forEach(([dayKey, list]) => {
+    list.forEach((ex, i) => exerciseRecords.push({
+      exercise_id: ex.id,
+      name:        ex.name,
+      workout_day: dayKey,
+      set_count:   ex.sets,
+      rep_range:   ex.repRange,
+      status:      'active',
+      sort_order:  i
+    }));
+  });
+  Object.entries(RETIRED_EXERCISES).forEach(([id, ex], i) => exerciseRecords.push({
+    exercise_id: id,
+    name:        ex.name,
+    workout_day: ex.day,
+    set_count:   ex.sets,
+    rep_range:   ex.repRange,
+    status:      'retired',
+    sort_order:  i        // unused for retired (not shown in a day sequence)
+  }));
+
+  const dayRecords = Object.entries(WORKOUT_DAY_LABELS).map(([key, label], i) => ({
+    workout_day_key: key,
+    label,
+    sort_order: i
+  }));
+
+  // workout_day_key is null on rest days — stored as-is.
+  const scheduleRecords = Object.entries(SCHEDULE_BY_DAY).map(([dow, key]) => ({
+    day_of_week:     Number(dow),
+    workout_day_key: key
+  }));
+
+  // One single-store transaction per store — never multi-store on iOS Safari.
+  await seedStore(db, 'exercises',        exerciseRecords);
+  await seedStore(db, 'workout_days',     dayRecords);
+  await seedStore(db, 'workout_schedule', scheduleRecords);
+}
+
+// Read the seeded stores back and confirm every expected exercise ID is
+// present. Missing IDs are the failure that orphans history — the critical
+// check. Returns { missing[], expected, stored }.
+async function verifyV4Seed() {
+  const expectedIds = [];
+  Object.values(EXERCISES).forEach(list => list.forEach(ex => expectedIds.push(ex.id)));
+  Object.keys(RETIRED_EXERCISES).forEach(id => expectedIds.push(id));
+
+  const stored    = await getAllRecords('exercises');
+  const storedIds = new Set(stored.map(r => r.exercise_id));
+  const missing   = expectedIds.filter(id => !storedIds.has(id));
+
+  // Cheap sanity checks on the other two stores — a count mismatch is a flag.
+  const days  = await getAllRecords('workout_days');
+  const sched = await getAllRecords('workout_schedule');
+  if (days.length  !== Object.keys(WORKOUT_DAY_LABELS).length)
+    console.warn('DB: workout_days count mismatch — got', days.length);
+  if (sched.length !== Object.keys(SCHEDULE_BY_DAY).length)
+    console.warn('DB: workout_schedule count mismatch — got', sched.length);
+
+  return { missing, expected: expectedIds.length, stored: storedIds.size };
+}
+
+// Run once after open. Seeds + verifies only when a seed is owed.
+async function maybeSeedV4(db) {
+  // Mark the seed owed the moment we detect the author's v3 → v4 upgrade.
+  if (_upgradeOldVersion === 3) {
+    try { localStorage.setItem(SEED_FLAG_KEY, 'pending'); } catch (_) {}
+  }
+  // Nothing owed: fresh installs (oldVersion 0) and every normal launch.
+  if (localStorage.getItem(SEED_FLAG_KEY) !== 'pending') return;
+
+  try {
+    await seedV4(db);
+    const { missing, expected, stored } = await verifyV4Seed();
+
+    if (missing.length) {
+      // Loud, immediate, fixable — the whole point of verifying. Flag stays
+      // 'pending', so fixing the cause and relaunching re-runs the seed.
+      console.error('DB: v4 seed verification FAILED — missing IDs:', missing);
+      alert('Migration verification FAILED.\nMissing exercise IDs: ' +
+            missing.join(', ') +
+            '\nDo not trust this device until re-migrated. See console.');
+      return;
+    }
+
+    localStorage.setItem(SEED_FLAG_KEY, 'complete');
+    console.log(`DB: v4 seed verified — ${stored}/${expected} exercise IDs present`);
+    // Author-only, one-time visible confirmation (testers never hit the
+    // pending flag). Remove this alert if you find it intrusive.
+    alert(`Migration OK — ${expected} exercise IDs seeded and verified.`);
+  } catch (err) {
+    console.error('DB: v4 seed/verify threw', err);
+    alert('Migration error — see console. Device not safe to trust until resolved.');
+    // Flag remains 'pending' → retried next launch.
+  }
 }
