@@ -18,7 +18,7 @@ async function selectCardioType(type) {
   const now = new Date();
   cSession = {
     cardioType:               type,
-    date:                     now.toISOString().split('T')[0],
+    date:                     localDateString(now),
     startTime:                now.toISOString(),
     endTime:                  null,
     durationMinutes:          null,

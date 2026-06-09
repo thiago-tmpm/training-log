@@ -37,6 +37,19 @@ function formatDate(date) {
   }).toUpperCase();
 }
 
+// Local calendar-day string, YYYY-MM-DD, in the device's own timezone.
+// Replaces `new Date().toISOString().split('T')[0]`, which returns the UTC
+// day and so rolls over to "tomorrow" during the evening hours in any
+// negative-offset timezone (and to "yesterday" in the morning for positive
+// offsets). Use this anywhere a *calendar day* is meant; keep toISOString()
+// only for full instant-in-time timestamps (start_time, end_time, timestamp).
+function localDateString(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 
 // ── HOME SCREEN STATE ──
 let selectedWorkoutDay = null;
@@ -46,7 +59,7 @@ let selectedWorkoutDay = null;
 let waterCount = 0;
 
 async function initWaterCount() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString();
   try {
     waterCount = await getWaterCountToday(today);
   } catch (e) {
@@ -63,7 +76,7 @@ function updateWaterDisplay() {
 }
 
 async function handleWaterTap() {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateString();
   try {
     await logWaterBottle(today);
     waterCount++;

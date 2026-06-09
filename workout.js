@@ -53,7 +53,7 @@ function maybeShowResumePrompt() {
   const label    = WORKOUT_DAY_LABELS[draft.workoutDay] || 'Workout';
   const pos      = Math.min(draft.currentIndex + 1, draft.exerciseQueue.length);
   const total    = draft.exerciseQueue.length;
-  const today    = new Date().toISOString().split('T')[0];
+  const today    = localDateString();
   const dateNote = draft.date !== today ? ` · ${draft.date}` : '';
 
   document.getElementById('resume-detail').textContent =
