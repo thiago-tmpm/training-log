@@ -1,9 +1,22 @@
-const CACHE_NAME = 'training-log-v40';
+const CACHE_NAME = 'training-log-v41';
 
 const ASSETS = [
   './',
   './index.html',
   './style.css',
+  './fonts/fonts.css',
+  './fonts/barlow-condensed-400-latin-ext.woff2',
+  './fonts/barlow-condensed-400-latin.woff2',
+  './fonts/barlow-condensed-600-latin-ext.woff2',
+  './fonts/barlow-condensed-600-latin.woff2',
+  './fonts/barlow-condensed-700-latin-ext.woff2',
+  './fonts/barlow-condensed-700-latin.woff2',
+  './fonts/barlow-400-latin-ext.woff2',
+  './fonts/barlow-400-latin.woff2',
+  './fonts/barlow-500-latin-ext.woff2',
+  './fonts/barlow-500-latin.woff2',
+  './fonts/roboto-mono-400.woff2',
+  './fonts/roboto-mono-500.woff2',
   './exercises.js',
   './db.js',
   './app.js',
