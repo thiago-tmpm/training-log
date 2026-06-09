@@ -95,7 +95,13 @@ document.addEventListener('visibilitychange', () => {
 
 // ── START SESSION ──
 async function startWorkout(dayKey) {
-  const exercises = EXERCISES[dayKey];
+  let exercises = [];
+  try {
+    exercises = await getExercisesForDay(dayKey);
+  } catch (e) {
+    console.warn('startWorkout: IDB read failed, falling back to constants', e);
+    exercises = (EXERCISES[dayKey] || []).map(ex => ({ ...ex }));
+  }
 
   wSession = {
     workoutDay:         dayKey,

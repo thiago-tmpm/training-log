@@ -88,7 +88,7 @@ async function handleWaterTap() {
 
 
 // ── UPDATE HOME DISPLAY ──
-function updateHomeWorkoutDisplay(dayKey) {
+function updateHomeWorkoutDisplay(dayKey, labels) {
   selectedWorkoutDay = dayKey;
 
   const nameEl   = document.getElementById('home-workout-name');
@@ -96,7 +96,7 @@ function updateHomeWorkoutDisplay(dayKey) {
   const chevron  = document.querySelector('.chevron-icon');
 
   if (dayKey) {
-    nameEl.textContent = WORKOUT_DAY_LABELS[dayKey];
+    nameEl.textContent = (labels && labels[dayKey]) || dayKey;
     nameEl.classList.remove('rest-day');
     startBtn.classList.remove('hidden');
     chevron.style.display = '';
@@ -110,16 +110,24 @@ function updateHomeWorkoutDisplay(dayKey) {
 
 
 // ── DAY SELECTOR SHEET ──
-function openDaySelectSheet() {
+async function openDaySelectSheet() {
   const container = document.getElementById('sheet-day-options');
   container.innerHTML = '';
 
-  Object.entries(WORKOUT_DAY_LABELS).forEach(([key, label]) => {
+  let labels = {};
+  try {
+    labels = await getWorkoutDayLabels();
+  } catch (e) {
+    console.warn('openDaySelectSheet: failed to load labels, falling back', e);
+    labels = { ...WORKOUT_DAY_LABELS };
+  }
+
+  Object.entries(labels).forEach(([key, label]) => {
     const btn = document.createElement('button');
     btn.className = 'sheet-option' + (key === selectedWorkoutDay ? ' selected' : '');
     btn.textContent = label;
     btn.addEventListener('click', () => {
-      updateHomeWorkoutDisplay(key);
+      updateHomeWorkoutDisplay(key, labels);
       closeSheet('sheet-day-select');
     });
     container.appendChild(btn);
@@ -130,13 +138,23 @@ function openDaySelectSheet() {
 
 
 // ── HOME SCREEN INIT ──
-function initHome() {
-  const today  = new Date();
-  const dayKey = SCHEDULE_BY_DAY[today.getDay()];
-
+async function initHome() {
+  const today = new Date();
   document.getElementById('home-date').textContent = formatDate(today);
-  updateHomeWorkoutDisplay(dayKey);
   initWaterCount();
+
+  let schedule = {};
+  let labels   = {};
+  try {
+    [schedule, labels] = await Promise.all([getSchedule(), getWorkoutDayLabels()]);
+  } catch (e) {
+    console.warn('initHome: IDB read failed, falling back to constants', e);
+    schedule = { ...SCHEDULE_BY_DAY };
+    labels   = { ...WORKOUT_DAY_LABELS };
+  }
+
+  const dayKey = schedule[today.getDay()] ?? null;
+  updateHomeWorkoutDisplay(dayKey, labels);
 }
 
 

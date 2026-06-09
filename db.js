@@ -366,6 +366,43 @@ async function getAllRecords(storeName) {
   });
 }
 
+// ── GET SCHEDULE ──
+// Returns an object keyed by day-of-week (0–6) → workout_day_key | null.
+// Mirrors the shape of the SCHEDULE_BY_DAY constant.
+async function getSchedule() {
+  const records = await getAllRecords('workout_schedule');
+  const map = {};
+  records.forEach(r => { map[r.day_of_week] = r.workout_day_key; });
+  return map;
+}
+
+// ── GET EXERCISES FOR DAY ──
+// Returns exercises for one workout day, sorted by sort_order, in the
+// camelCase shape that workout.js expects (sets, repRange — not set_count,
+// rep_range). Translation happens here at the read boundary.
+async function getExercisesForDay(dayKey) {
+  const records = await getAllRecords('exercises');
+  return records
+    .filter(r => r.workout_day === dayKey && r.status === 'active')
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(r => ({
+      id:       r.exercise_id,
+      name:     r.name,
+      sets:     r.set_count,
+      repRange: r.rep_range
+    }));
+}
+
+// ── GET WORKOUT DAY LABELS ──
+// Returns an object keyed by workout_day_key → label string.
+// Mirrors the shape of the WORKOUT_DAY_LABELS constant.
+async function getWorkoutDayLabels() {
+  const records = await getAllRecords('workout_days');
+  const map = {};
+  records.forEach(r => { map[r.workout_day_key] = r.label; });
+  return map;
+}
+
 // ── v4 MIGRATION SEED + VERIFICATION (Phase 2.1) ──
 // One-time, author-only seed: copies the hardcoded exercise list, retired
 // list, day labels, and weekday schedule into the new stores WITH THEIR
