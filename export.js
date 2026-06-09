@@ -17,7 +17,10 @@ const EXPORT_SCHEMA = {
                      'duration_minutes', 'avg_heart_rate', 'active_kcal', 'total_kcal',
                      'effort_level', 'linked_workout_session_id', 'cardio_timing'],
   bodyweight_log:   ['log_id', 'date', 'weight_kg', 'notes'],
-  water_log:        ['log_id', 'date', 'timestamp']
+  water_log:        ['log_id', 'date', 'timestamp'],
+  exercises:        ['exercise_id', 'name', 'workout_day', 'set_count', 'rep_range', 'status', 'sort_order'],
+  workout_days:     ['workout_day_key', 'label', 'sort_order'],
+  workout_schedule: ['day_of_week', 'workout_day_key']
 };
 
 // Escape one CSV field. Wrap in quotes if it contains a comma, quote, or
