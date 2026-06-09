@@ -99,7 +99,7 @@ async function startWorkout(dayKey) {
 
   wSession = {
     workoutDay:         dayKey,
-    date:               new Date().toISOString().split('T')[0],
+    date:               localDateString(),
     startTime:          new Date().toISOString(),
     endTime:            null,
     bodyweightKg:       null,
