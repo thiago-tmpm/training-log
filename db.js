@@ -405,6 +405,29 @@ async function getWorkoutDayLabels() {
   return map;
 }
 
+// ── GENERATE EXERCISE ID (WBS 2.2) ──
+// Returns a new, never-before-used exercise_id of the form `ex_<uuid>`.
+// Exercise IDs are permanent identity and the join key for set_logs, so an
+// ID must NEVER collide with any existing one — active OR retired. A retired
+// exercise still owns its ID forever (its historical set_logs point at it),
+// so retired IDs are included in the uniqueness check.
+//
+// crypto.randomUUID() is collision-proof for practical purposes; the
+// read-back check is a cheap assertion, not a real expectation of collision.
+// It also catches the one realistic failure: a caller accidentally trying to
+// reintroduce a hand-assigned legacy ID (e.g. 'pu_1') through this path.
+async function generateExerciseId() {
+  const existing = await getAllRecords('exercises');
+  const usedIds  = new Set(existing.map(r => r.exercise_id));
+
+  let id;
+  do {
+    id = `ex_${crypto.randomUUID()}`;
+  } while (usedIds.has(id));
+
+  return id;
+}
+
 // ── v4 MIGRATION SEED + VERIFICATION (Phase 2.1) ──
 // One-time, author-only seed: copies the hardcoded exercise list, retired
 // list, day labels, and weekday schedule into the new stores WITH THEIR
