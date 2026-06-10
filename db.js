@@ -399,7 +399,9 @@ async function getExercisesForDay(dayKey) {
 async function getWorkoutDayLabels() {
   const records = await getAllRecords('workout_days');
   const map = {};
-  records.forEach(r => { map[r.workout_day_key] = r.label; });
+  records
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .forEach(r => { map[r.workout_day_key] = r.label; });
   return map;
 }
 
