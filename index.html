@@ -8,6 +8,12 @@
   <meta name="apple-mobile-web-app-title" content="Training">
   <link rel="manifest" href="./manifest.json">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <!-- Paint the canvas dark immediately, before the render-blocking external
+       stylesheets load, so the cold-start frame between the iOS splash and the
+       styled page is #0D0D0D instead of the WebView's default gray. Inline on
+       purpose: a rule inside style.css can't do this — style.css is the very
+       resource we're waiting on. -->
+  <style>html, body { background-color: #0D0D0D; }</style>
   <link rel="stylesheet" href="./fonts/fonts.css">
   <link rel="stylesheet" href="./style.css">
   <title>Training Log</title>
