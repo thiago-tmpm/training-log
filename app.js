@@ -10,6 +10,15 @@ if ('serviceWorker' in navigator) {
 }
 
 
+// ── ENABLE :active FEEDBACK ON iOS ──
+// iOS Safari does not apply :active styles unless a touchstart handler exists
+// somewhere in the ancestor chain. Without it, every :active rule in style.css
+// (button scale, background flips, colour shifts) silently does nothing on
+// iPhone — which is why taps feel dead. One empty passive listener on the
+// document unlocks :active globally and changes no other behaviour.
+document.addEventListener('touchstart', () => {}, { passive: true });
+
+
 // ── SCREEN ROUTER ──
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));

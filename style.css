@@ -230,11 +230,13 @@ body {
 
 .ex-header {
   flex-shrink: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 16px 0 12px;
 }
+.ex-header > .back-btn { justify-self: start; }
+.ex-header > .skip-btn { justify-self: end; }
 
 .ex-progress {
   font-family: var(--font-mono);
@@ -649,11 +651,12 @@ body {
 /* ── Shared cardio header ── */
 .cardio-type-header {
   flex-shrink: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 16px 0 12px;
 }
+.cardio-type-header > .back-btn { justify-self: start; }
 
 .cardio-screen-title {
   font-family: var(--font-mono);
@@ -950,11 +953,12 @@ body {
 ═══════════════════════════════════════════ */
 .builder-header {
   flex-shrink: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 16px 0 12px;
 }
+.builder-header > .back-btn { justify-self: start; }
 
 .builder-title {
   font-family: var(--font-mono);
