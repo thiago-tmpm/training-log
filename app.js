@@ -180,6 +180,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-export')
     .addEventListener('click', exportAllData);
+
+  document.getElementById('btn-builder')
+    .addEventListener('click', openBuilder);
   
     document.getElementById('btn-water-home')
     .addEventListener('click', handleWaterTap);

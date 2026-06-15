@@ -943,3 +943,105 @@ body {
   justify-content: center;
   padding: 0 4px;
 }
+
+
+/* ═══════════════════════════════════════════
+   WORKOUT BUILDER (Phase 2.3)
+═══════════════════════════════════════════ */
+.builder-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 12px;
+}
+
+.builder-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.builder-body {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Exercise list: tight rows with hairline separators, no inter-row gap. */
+.builder-body--list { gap: 0; }
+
+/* Day row — tappable card */
+.builder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: var(--surface);
+  border: none;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  text-align: left;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+.builder-row:active { background: var(--surface-2); }
+
+.builder-row-label {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.builder-row-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* Exercise row (read-only in Slice A) */
+.builder-ex-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--surface);
+}
+
+.builder-ex-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+
+.builder-ex-meta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.builder-empty,
+.builder-error {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 24px 4px;
+  line-height: 1.5;
+}
+.builder-error { color: var(--danger); }

@@ -41,6 +41,18 @@
             <line x1="10" y1="13.5" x2="14" y2="13.5"/>
           </svg>
         </button>
+        <button class="icon-btn" id="btn-builder" aria-label="Edit workout">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="7" x2="14" y2="7"/>
+            <line x1="18" y1="7" x2="20" y2="7"/>
+            <circle cx="16" cy="7" r="2"/>
+            <line x1="4" y1="12" x2="8" y2="12"/>
+            <line x1="12" y1="12" x2="20" y2="12"/>
+            <circle cx="10" cy="12" r="2"/>
+            <line x1="4" y1="17" x2="16" y2="17"/>
+            <circle cx="18" cy="17" r="2"/>
+          </svg>
+        </button>
       </div>
     </div>
     <div class="home-hero">
@@ -243,6 +255,25 @@
     </div>
   </div>
 
+  <!-- WORKOUT BUILDER — day list (Phase 2.3, Slice A) -->
+  <div id="screen-builder" class="screen">
+    <div class="builder-header">
+      <button class="back-btn" onclick="closeBuilder()">← Home</button>
+      <span class="builder-title">WORKOUT BUILDER</span>
+      <span></span>
+    </div>
+    <div class="builder-body" id="builder-day-list"></div>
+  </div>
+
+  <!-- WORKOUT BUILDER — single day's exercises (read-only in Slice A) -->
+  <div id="screen-builder-day" class="screen">
+    <div class="builder-header">
+      <button class="back-btn" onclick="openBuilder()">← Back</button>
+      <span class="builder-title" id="builder-day-title"></span>
+      <span></span>
+    </div>
+    <div class="builder-body builder-body--list" id="builder-exercise-list"></div>
+  </div>
 
   <!-- BOTTOM SHEETS -->
   <div class="sheet-overlay" id="sheet-day-select">
@@ -284,6 +315,7 @@
   <script src="./workout.js"></script>
   <script src="./cardio.js"></script>
   <script src="./export.js"></script>
+  <script src="./builder.js"></script>
 
 
   <!-- WATER FAB — persistent across all screens -->
